@@ -1,4 +1,4 @@
-package taskdto
+package dto
 
 type CriarTaskRequest struct {
 	ProjectID string
