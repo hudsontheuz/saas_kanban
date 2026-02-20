@@ -1,28 +1,16 @@
-# SaaS Kanban (Backend)
+# saas_kanban
 
-Backend em **Go** para um sistema de gestão de tarefas no modelo Kanban, desenvolvido com foco em **clareza de domínio**, **manutenibilidade** e **testabilidade**.
+Backend em Go para um sistema de gestão de tarefas no modelo Kanban, construído com foco em **regras de negócio**, **manutenibilidade** e **testabilidade**.
 
-Este projeto representa uma evolução consciente de arquitetura: sair de um CRUD funcional para uma estrutura orientada a regras de negócio, aplicando **Clean Architecture**, princípios **SOLID** e conceitos iniciais de **DDD** (Domain-Driven Design).
-
----
-
-## 🎯 Objetivo do Projeto
-
-Construir um backend sólido e bem estruturado que:
-
-- Separe claramente domínio e infraestrutura
-- Modele comportamento (não apenas tabelas)
-- Permita evolução sem alto acoplamento
-- Seja fácil de testar
-- Demonstre maturidade técnica em entrevistas
-
-Este não é apenas um projeto que “funciona”, mas um projeto pensado para **evoluir com consistência**.
+Este projeto representa uma evolução consciente de arquitetura: sair de um CRUD funcional para uma estrutura orientada a domínio, aplicando princípios de **Clean Architecture**, **SOLID** e conceitos iniciais de **DDD (Domain-Driven Design)**.
 
 ---
 
-## 📚 Regras de Negócio (MVP)
+## 🎯 Visão do MVP
 
-### 📌 Kanban (Fluxo de Status)
+Sistema Kanban com regras explícitas e comportamento modelado no domínio.
+
+### 📌 Fluxo de Status
 
 - `ToDo`
 - `Doing`
@@ -44,7 +32,7 @@ Este não é apenas um projeto que “funciona”, mas um projeto pensado para *
 ### 📝 Task (Tarefa)
 
 - Pertence a um projeto.
-- Pode ter sugestão de responsável (SelectedAssignee).
+- Pode ter sugestão de responsável (**SelectedAssignee**).
 - Só é assumida oficialmente quando alguém realiza **self-assign**.
 - Cada usuário pode ter **apenas 1 task em Doing por vez**.
 - Se reprovada em `InReview`, retorna para `ToDo`.
@@ -52,23 +40,18 @@ Este não é apenas um projeto que “funciona”, mas um projeto pensado para *
 
 ---
 
-## 🧠 Arquitetura
+## 🧠 Arquitetura (Bounded Contexts)
 
-Este projeto segue uma abordagem inspirada em **Clean Architecture**:
+Este projeto segue uma abordagem inspirada em Clean Architecture.
 
-- **Domain** → Regras puras de negócio (não depende de banco ou framework)
+### Camadas:
+
+- **Domain** → Regras puras de negócio (sem dependência externa)
 - **Application** → Casos de uso, DTOs e Ports (interfaces)
-- **Infrastructure** → Implementações concretas (ex: persistência em memória, futuro Postgres)
-- **Tests** → Foco em validar comportamento do domínio
+- **Infrastructure** → Implementações concretas (ex: persistência em memória)
+- **Tests** → Validação de comportamento
 
-### Regra central:
-
-> O domínio não depende de nada.  
-> O restante do sistema depende do domínio.
-
----
-
-## 🗂 Estrutura do Projeto
+### Estrutura de Pastas
 
 ```text
 internal/
@@ -98,9 +81,6 @@ internal/
 
 tests/
 
-
-🧪 Testes
-
-Rodar todos os testes:
+🧪 Como rodar os testes
 
 go test ./...
