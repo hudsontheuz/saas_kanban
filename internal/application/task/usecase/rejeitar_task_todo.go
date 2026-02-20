@@ -20,7 +20,7 @@ func NovoRejeitarTaskToDoUseCase(projects projectports.ProjectRepository, teams 
 	return &RejeitarTaskToDoUseCase{projects: projects, teams: teams, tasks: tasks}
 }
 
-func (uc *RejeitarTaskToDoUseCase) Executar(req taskdto.RejeitarTaskToDoRequest) error {
+func (uc *RejeitarTaskToDoUseCase) Executar(req dto.RejeitarTaskToDoRequest) error {
 	tk, err := uc.tasks.BuscarPorID(task.TaskID(req.TaskID))
 	if err != nil {
 		return err

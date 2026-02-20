@@ -18,7 +18,7 @@ func NovoRetomarTaskUseCase(projects projectports.ProjectRepository, tasks taskp
 	return &RetomarTaskUseCase{projects: projects, tasks: tasks}
 }
 
-func (uc *RetomarTaskUseCase) Executar(req taskdto.RetomarTaskRequest) error {
+func (uc *RetomarTaskUseCase) Executar(req dto.RetomarTaskRequest) error {
 	tk, err := uc.tasks.BuscarPorID(task.TaskID(req.TaskID))
 	if err != nil {
 		return err

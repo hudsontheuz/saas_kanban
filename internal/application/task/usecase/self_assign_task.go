@@ -22,7 +22,7 @@ func NovoSelfAssignTaskUseCase(projects projectports.ProjectRepository, tasks ta
 	return &SelfAssignTaskUseCase{projects: projects, tasks: tasks}
 }
 
-func (uc *SelfAssignTaskUseCase) Executar(req taskdto.SelfAssignRequest) error {
+func (uc *SelfAssignTaskUseCase) Executar(req dto.SelfAssignRequest) error {
 	tk, err := uc.tasks.BuscarPorID(task.TaskID(req.TaskID))
 	if err != nil {
 		return err

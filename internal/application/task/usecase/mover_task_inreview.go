@@ -18,7 +18,7 @@ func NovoMoverParaInReviewUseCase(projects projectports.ProjectRepository, tasks
 	return &MoverParaInReviewUseCase{projects: projects, tasks: tasks}
 }
 
-func (uc *MoverParaInReviewUseCase) Executar(req taskdto.MoverParaInReviewRequest) error {
+func (uc *MoverParaInReviewUseCase) Executar(req dto.MoverParaInReviewRequest) error {
 	tk, err := uc.tasks.BuscarPorID(task.TaskID(req.TaskID))
 	if err != nil {
 		return err

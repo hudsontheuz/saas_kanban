@@ -21,7 +21,7 @@ func TestSlice_CriarTask_OK(t *testing.T) {
 	_ = projectRepo.Salvar(p)
 
 	uc := usecase.NovoCriarTaskUseCase(projectRepo, taskRepo)
-	resp, err := uc.Executar(taskdto.CriarTaskRequest{
+	resp, err := uc.Executar(dto.CriarTaskRequest{
 		ProjectID: string(p.ID()),
 		Titulo:    "Primeira task",
 		CriadorID: "user-1",
@@ -43,7 +43,7 @@ func TestSlice_ProjectFechado_BloqueiaCriarTask(t *testing.T) {
 	_ = projectRepo.Salvar(p)
 
 	uc := usecase.NovoCriarTaskUseCase(projectRepo, taskRepo)
-	_, err := uc.Executar(taskdto.CriarTaskRequest{
+	_, err := uc.Executar(dto.CriarTaskRequest{
 		ProjectID: string(p.ID()),
 		Titulo:    "Task bloqueada",
 	})

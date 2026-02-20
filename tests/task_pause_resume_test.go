@@ -28,18 +28,18 @@ func TestPause_NaoContaNoLimiteGlobal_SelfAssignEmOutraTaskFunciona(t *testing.T
 
 	// self-assign na primeira (vira DOING ativa)
 	ucAssign := usecase.NovoSelfAssignTaskUseCase(projectRepo, taskRepo)
-	if err := ucAssign.Executar(taskdto.SelfAssignRequest{TaskID: string(t1.ID()), UserID: user}); err != nil {
+	if err := ucAssign.Executar(dto.SelfAssignRequest{TaskID: string(t1.ID()), UserID: user}); err != nil {
 		t.Fatalf("esperava self-assign em t1 ok, veio: %v", err)
 	}
 
 	// pausar t1 (continua DOING, mas pausada)
 	ucPause := usecase.NovoPausarTaskUseCase(projectRepo, taskRepo)
-	if err := ucPause.Executar(taskdto.PausarTaskRequest{TaskID: string(t1.ID()), UserID: user}); err != nil {
+	if err := ucPause.Executar(dto.PausarTaskRequest{TaskID: string(t1.ID()), UserID: user}); err != nil {
 		t.Fatalf("esperava pausar ok, veio: %v", err)
 	}
 
 	// agora self-assign na segunda deve funcionar (porque t1 pausada não conta)
-	if err := ucAssign.Executar(taskdto.SelfAssignRequest{TaskID: string(t2.ID()), UserID: user}); err != nil {
+	if err := ucAssign.Executar(dto.SelfAssignRequest{TaskID: string(t2.ID()), UserID: user}); err != nil {
 		t.Fatalf("esperava self-assign em t2 ok (t1 pausada), veio: %v", err)
 	}
 }
@@ -63,14 +63,14 @@ func TestRetomar_FalhaSeExisteOutraDoingAtiva(t *testing.T) {
 	ucResume := usecase.NovoRetomarTaskUseCase(projectRepo, taskRepo)
 
 	// self-assign t1 e pausa
-	_ = ucAssign.Executar(taskdto.SelfAssignRequest{TaskID: string(t1.ID()), UserID: user})
-	_ = ucPause.Executar(taskdto.PausarTaskRequest{TaskID: string(t1.ID()), UserID: user})
+	_ = ucAssign.Executar(dto.SelfAssignRequest{TaskID: string(t1.ID()), UserID: user})
+	_ = ucPause.Executar(dto.PausarTaskRequest{TaskID: string(t1.ID()), UserID: user})
 
 	// self-assign t2 (fica DOING ativa)
-	_ = ucAssign.Executar(taskdto.SelfAssignRequest{TaskID: string(t2.ID()), UserID: user})
+	_ = ucAssign.Executar(dto.SelfAssignRequest{TaskID: string(t2.ID()), UserID: user})
 
 	// tentar retomar t1 deve falhar porque existe outra DOING ativa (t2)
-	err := ucResume.Executar(taskdto.RetomarTaskRequest{TaskID: string(t1.ID()), UserID: user})
+	err := ucResume.Executar(dto.RetomarTaskRequest{TaskID: string(t1.ID()), UserID: user})
 	if err == nil {
 		t.Fatalf("esperava erro ao retomar com outra DOING ativa")
 	}

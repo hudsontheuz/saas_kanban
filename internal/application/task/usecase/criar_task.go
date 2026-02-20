@@ -17,23 +17,23 @@ func NovoCriarTaskUseCase(projects projectports.ProjectRepository, tasks taskpor
 	return &CriarTaskUseCase{projects: projects, tasks: tasks}
 }
 
-func (uc *CriarTaskUseCase) Executar(req taskdto.CriarTaskRequest) (taskdto.CriarTaskResponse, error) {
+func (uc *CriarTaskUseCase) Executar(req dto.CriarTaskRequest) (dto.CriarTaskResponse, error) {
 	p, err := uc.projects.BuscarPorID(project.ProjectID(req.ProjectID))
 	if err != nil {
-		return taskdto.CriarTaskResponse{}, err
+		return dto.CriarTaskResponse{}, err
 	}
 	if p.EstaFechado() {
-		return taskdto.CriarTaskResponse{}, project.ErrProjetoFechado
+		return dto.CriarTaskResponse{}, project.ErrProjetoFechado
 	}
 
 	tk, err := task.NovaTask(p.ID(), req.Titulo)
 	if err != nil {
-		return taskdto.CriarTaskResponse{}, err
+		return dto.CriarTaskResponse{}, err
 	}
 
 	if err := uc.tasks.Salvar(tk); err != nil {
-		return taskdto.CriarTaskResponse{}, err
+		return dto.CriarTaskResponse{}, err
 	}
 
-	return taskdto.CriarTaskResponse{TaskID: string(tk.ID())}, nil
+	return dto.CriarTaskResponse{TaskID: string(tk.ID())}, nil
 }

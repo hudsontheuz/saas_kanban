@@ -18,7 +18,7 @@ func NovoPausarTaskUseCase(projects projectports.ProjectRepository, tasks taskpo
 	return &PausarTaskUseCase{projects: projects, tasks: tasks}
 }
 
-func (uc *PausarTaskUseCase) Executar(req taskdto.PausarTaskRequest) error {
+func (uc *PausarTaskUseCase) Executar(req dto.PausarTaskRequest) error {
 	tk, err := uc.tasks.BuscarPorID(task.TaskID(req.TaskID))
 	if err != nil {
 		return err

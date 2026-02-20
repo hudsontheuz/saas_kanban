@@ -20,7 +20,7 @@ func NovoReprovarTaskUseCase(projects projectports.ProjectRepository, teams team
 	return &ReprovarTaskUseCase{projects: projects, teams: teams, tasks: tasks}
 }
 
-func (uc *ReprovarTaskUseCase) Executar(req taskdto.ReprovarTaskRequest) error {
+func (uc *ReprovarTaskUseCase) Executar(req dto.ReprovarTaskRequest) error {
 	tk, err := uc.tasks.BuscarPorID(task.TaskID(req.TaskID))
 	if err != nil {
 		return err

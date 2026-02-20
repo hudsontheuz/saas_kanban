@@ -1,4 +1,4 @@
-package taskdto
+package dto
 
 type SelfAssignRequest struct {
 	TaskID string
