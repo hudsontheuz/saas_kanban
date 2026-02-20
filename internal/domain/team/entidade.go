@@ -28,7 +28,7 @@ func NovaTeam(nome string, leaderID UserID) (*Team, error) {
 	}, nil
 }
 
-func (t *Team) ID() TeamID         { return t.id }
-func (t *Team) Nome() string       { return t.nome }
-func (t *Team) LeaderID() UserID   { return t.leaderID }
+func (t *Team) ID() TeamID             { return t.id }
+func (t *Team) Nome() string           { return t.nome }
+func (t *Team) LeaderID() UserID       { return t.leaderID }
 func (t *Team) EhLeader(u UserID) bool { return t.leaderID == u }

@@ -1,8 +1,8 @@
 package usecase
 
 import (
-	"github.com/hudsontheuz/saas_kanban/internal/application/task/dto"
 	projectports "github.com/hudsontheuz/saas_kanban/internal/application/project/ports"
+	"github.com/hudsontheuz/saas_kanban/internal/application/task/dto"
 	taskports "github.com/hudsontheuz/saas_kanban/internal/application/task/ports"
 	teamports "github.com/hudsontheuz/saas_kanban/internal/application/team/ports"
 	"github.com/hudsontheuz/saas_kanban/internal/domain/project"

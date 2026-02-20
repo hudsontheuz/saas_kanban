@@ -41,14 +41,14 @@ func NovaTask(projectID project.ProjectID, titulo string) (*Task, error) {
 	}, nil
 }
 
-func (t *Task) ID() TaskID                     { return t.id }
-func (t *Task) ProjectID() project.ProjectID   { return t.projectID }
-func (t *Task) Titulo() string                 { return t.titulo }
-func (t *Task) Status() StatusTask             { return t.status }
-func (t *Task) IsPaused() bool                 { return t.isPaused }
-func (t *Task) Assignee() *team.UserID         { return t.assignee }
-func (t *Task) Outcome() *OutcomeTask          { return t.outcome }
-func (t *Task) DeletedAt() *time.Time          { return t.deletedAt }
+func (t *Task) ID() TaskID                   { return t.id }
+func (t *Task) ProjectID() project.ProjectID { return t.projectID }
+func (t *Task) Titulo() string               { return t.titulo }
+func (t *Task) Status() StatusTask           { return t.status }
+func (t *Task) IsPaused() bool               { return t.isPaused }
+func (t *Task) Assignee() *team.UserID       { return t.assignee }
+func (t *Task) Outcome() *OutcomeTask        { return t.outcome }
+func (t *Task) DeletedAt() *time.Time        { return t.deletedAt }
 
 func (t *Task) ValidarInvariantes() error {
 	if t.outcome != nil && t.status != Done {

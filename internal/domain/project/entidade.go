@@ -40,10 +40,10 @@ func NovoProject(teamID team.TeamID, settings ConfiguracoesProject) (*Project, e
 	}, nil
 }
 
-func (p *Project) ID() ProjectID                     { return p.id }
-func (p *Project) TeamID() team.TeamID               { return p.teamID }
-func (p *Project) Settings() ConfiguracoesProject    { return p.settings }
-func (p *Project) EstaFechado() bool                 { return p.status == ProjectFechado }
+func (p *Project) ID() ProjectID                  { return p.id }
+func (p *Project) TeamID() team.TeamID            { return p.teamID }
+func (p *Project) Settings() ConfiguracoesProject { return p.settings }
+func (p *Project) EstaFechado() bool              { return p.status == ProjectFechado }
 
 func (p *Project) Fechar(agora time.Time) {
 	if p.EstaFechado() {
