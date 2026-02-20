@@ -1,0 +1,17 @@
+run:
+  timeout: 2m
+
+linters:
+  enable:
+    - govet
+    - errcheck
+    - staticcheck
+    - revive
+    - ineffassign
+    - typecheck
+
+linters-settings:
+  revive:
+    rules:
+      - name: exported
+        disabled: true
