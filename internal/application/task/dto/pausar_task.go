@@ -1,6 +1,6 @@
 package dto
 
-type SelfAssignRequest struct {
+type PausarTaskRequest struct {
 	TaskID string
 	UserID string
 }
