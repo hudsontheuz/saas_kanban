@@ -65,15 +65,15 @@ internal/
     project/
       dto/
       ports/
-      usecases/
+      usecase/
     task/
       dto/
       ports/
-      usecases/
+      usecase/
     team/
       dto/
       ports/
-      usecases/
+      usecase/
 
   infrastructure/
     persistence/

@@ -4,6 +4,7 @@ import (
 	"sync"
 
 	"github.com/hudsontheuz/saas_kanban/internal/domain/project"
+	"github.com/hudsontheuz/saas_kanban/internal/domain/team"
 )
 
 type ProjectRepoEmMemoria struct {
@@ -30,4 +31,16 @@ func (r *ProjectRepoEmMemoria) BuscarPorID(id project.ProjectID) (*project.Proje
 		return nil, ErrNaoEncontrado
 	}
 	return p, nil
+}
+
+func (r *ProjectRepoEmMemoria) BuscarAtivoPorTeamID(teamID team.TeamID) (*project.Project, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	for _, p := range r.dados {
+		if p.TeamID() == teamID && !p.EstaFechado() {
+			return p, nil
+		}
+	}
+	return nil, ErrNaoEncontrado
 }
