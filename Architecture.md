@@ -4,15 +4,15 @@
 
 O backend do `saas_kanban` foi estruturado com foco em separação clara de responsabilidades, baixo acoplamento e facilidade de evolução.
 
-A arquitetura é inspirada em Clean Architecture, organizada por bounded contexts, com aplicação prática de princípios SOLID.
+A arquitetura é inspirada em **Clean Architecture** com um **DDD leve**, organizada por bounded contexts, aplicando princípios SOLID e mantendo o **domínio isolado** de detalhes externos (HTTP, banco, frameworks).
 
-O objetivo principal é manter o domínio isolado de detalhes externos como banco de dados, transporte HTTP ou frameworks.
+O objetivo é permitir evolução previsível: trocar persistência, trocar transporte, adicionar autenticação real, sem reescrever regras de negócio.
 
 ---
 
 ## Camadas
 
-### 1. Domain
+### 1. Domain (`internal/domain`)
 
 Responsável por concentrar:
 
@@ -32,106 +32,127 @@ Características:
 
 ---
 
-### 2. Application
+### 2. Application (`internal/application`)
 
 Responsável por:
 
-- Casos de uso
+- Casos de uso (usecases)
 - Orquestração do domínio
 - Definição de interfaces (Ports)
 - DTOs
 
-Contém:
+Contém (por bounded context):
 
 - `usecase/`
 - `ports/`
 - `dto/`
 
-A camada Application depende do Domain, mas não conhece implementações concretas da Infrastructure.
+A camada Application depende do Domain, mas **não** conhece implementações concretas da Infrastructure.
 
 ---
 
-### 3. Infrastructure
+### 3. Delivery (HTTP) (`delivery/http`)
 
-Contém implementações concretas das interfaces definidas na Application.
+Responsável por expor o sistema via HTTP, sem regras de negócio.
 
-Exemplo atual:
+Contém:
 
-- Persistência em memória
+- Router (chi)
+- Handlers (controllers)
+- Middlewares (ex.: fake auth)
+- Mapeamento de erros para HTTP status
 
-Essa camada depende de Application e Domain, mas nunca o contrário.
+Características:
+
+- Depende de Application (chama usecases)
+- Não deve conter regra de negócio
+- Não conhece detalhes de persistência (só interfaces/usecases)
 
 ---
 
-### 4. Tests
+### 4. Infrastructure (`infrastructure`)
+
+Implementações concretas das interfaces definidas na Application.
+
+Exemplos atuais:
+
+- Persistência em memória (`infrastructure/persistence/memory`) — usada em testes/execução simples
+- Persistência PostgreSQL via GORM (`infrastructure/persistence/gorm`)
+
+Características:
+
+- Depende de Application e Domain
+- Nunca o contrário
+
+---
+
+### 5. Migrations (`migrations`)
+
+Migrações SQL controlam o schema do Postgres.
+
+O schema já inclui constraints que reforçam regras críticas do sistema, como:
+
+- **1 projeto ACTIVE por equipe**
+- **1 task DOING não pausada por usuário**
+
+---
+
+### 6. Tests
 
 Testes focados principalmente em:
 
 - Validação de comportamento do domínio
 - Garantia das regras críticas
+- Usecases (quando aplicável)
 
 ---
 
 ## Estrutura de Pastas
 
+```text
+cmd/
+  api/
+    main.go
 
----
+delivery/
+  http/
+    router.go
+    handlers/
+      task_handler.go
+    middleware/
+      (fake auth, etc)
 
-## Organização por Bounded Context
+internal/
+  domain/
+    project/
+    task/
+    team/
+    shared/
 
-O projeto está dividido em contextos independentes:
+  application/
+    project/
+      dto/
+      ports/
+      usecase/
+    task/
+      dto/
+      ports/
+      usecase/
+    team/
+      dto/
+      ports/
+      usecase/
 
-- `task`
-- `project`
-- `team`
+infrastructure/
+  persistence/
+    memory/
+    gorm/
+      db.go
+      model/
+      repo/
 
-Cada contexto possui sua própria organização interna dentro das camadas.
+migrations/
+  001_start_system.up.sql
+  001_start_system.down.sql
 
-No estágio atual (MVP), pode haver dependência entre contextos no nível de Application.
-
-Refinamentos futuros podem introduzir interfaces leitoras específicas para reduzir acoplamento direto entre contexts.
-
----
-
-## Dependências Entre Camadas
-
-Fluxo permitido:
-
-Infrastructure → Application → Domain
-
-Fluxo não permitido:
-
-Domain → Application  
-Domain → Infrastructure  
-Application → Infrastructure (implementações concretas)
-
-O domínio permanece isolado.
-
----
-
-## Decisões Arquiteturais Atuais
-
-- Persistência em memória para manter foco nas regras de negócio
-- API HTTP ainda não implementada
-- Banco de dados real e Docker planejados para próxima etapa
-- Estrutura modular definida desde o início para evitar refatorações estruturais futuras
-
----
-
-## Diretrizes de Código
-
-- `usecase` permanece no singular (padronizado)
-- `ports` contém apenas interfaces
-- Implementações concretas vivem exclusivamente na Infrastructure
-- Entidades concentram comportamento, não apenas dados
-- Application orquestra, Domain decide
-
----
-
-## Objetivo Evolutivo
-
-A arquitetura foi pensada para permitir:
-
-- Adição futura de camada HTTP sem alterar o domínio
-- Troca de persistência (memória → PostgreSQL) sem impactar regras
-- Crescimento do sistema mantendo previsibilidade estrutural
+tests/

@@ -42,45 +42,82 @@ Sistema Kanban com regras explícitas e comportamento modelado no domínio.
 
 ## 🧠 Arquitetura (Bounded Contexts)
 
-Este projeto segue uma abordagem inspirada em Clean Architecture.
+Este projeto segue uma abordagem inspirada em Clean Architecture + DDD leve.
 
-### Camadas:
+### Camadas
 
 - **Domain** → Regras puras de negócio (sem dependência externa)
 - **Application** → Casos de uso, DTOs e Ports (interfaces)
-- **Infrastructure** → Implementações concretas (ex: persistência em memória)
-- **Tests** → Validação de comportamento
+- **Delivery (HTTP)** → Router/handlers/middlewares (chi)
+- **Infrastructure** → Implementações concretas (memória, PostgreSQL via GORM)
+- **Migrations** → Schema SQL versionado (golang-migrate)
+- **Tests** → Validação de comportamento e regras
 
-### Estrutura de Pastas
+---
 
-```text
-internal/
-  domain/
-    project/
-    task/
-    team/
-    shared/
+## ✅ Status atual
 
-  application/
-    project/
-      dto/
-      ports/
-      usecase/
-    task/
-      dto/
-      ports/
-      usecase/
-    team/
-      dto/
-      ports/
-      usecase/
+- PostgreSQL via Docker (porta **5434**)
+- Migrations com `golang-migrate`
+- Infra GORM criada (`infrastructure/persistence/gorm`)
+- Delivery HTTP preparada (`delivery/http`)
+- Primeira rota preparada: `POST /tasks/{id}/self-assign`
+- Autenticação real ainda não existe: será usado **fake auth** via middleware (dev)
 
-  infrastructure/
-    persistence/
-      memory/
+---
 
-tests/
+## 🐳 Subir Postgres (Docker)
+
+Exemplo (ajuste se você já tiver seu `docker-compose.yml`):
+
+```bash
+docker run --name saas_kanban_pg \
+  -e POSTGRES_PASSWORD=postgres \
+  -e POSTGRES_USER=postgres \
+  -e POSTGRES_DB=saas_kanban \
+  -p 5434:5432 \
+  -d postgres:16
+🗄️ Rodar migrations (golang-migrate)
+
+Exemplo:
+
+migrate -path migrations -database "postgres://postgres:postgres@localhost:5434/saas_kanban?sslmode=disable" up
+
+Rollback:
+
+migrate -path migrations -database "postgres://postgres:postgres@localhost:5434/saas_kanban?sslmode=disable" down 1
+▶️ Rodar a API
+
+A API usa DB_URL:
+
+export DB_URL="postgres://postgres:postgres@localhost:5434/saas_kanban?sslmode=disable"
+go run ./cmd/api
+🌐 Endpoints (inicial)
+POST /tasks/{id}/self-assign
+
+Assume a task para o usuário autenticado (via fake auth).
+
+Header (dev):
+
+X-User-Id: <id>
+
+Exemplo:
+
+curl -X POST \
+  -H "X-User-Id: 1" \
+  http://localhost:8080/tasks/10/self-assign
+
+Resposta esperada:
+
+{"ok":true}
+
+Erros comuns:
+
+404 se task não existe
+
+409 se o usuário já tem uma task em Doing não pausada
+
+400 para violações de regra de negócio
 
 🧪 Como rodar os testes
-
 go test ./...
