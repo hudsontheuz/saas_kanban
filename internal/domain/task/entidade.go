@@ -34,7 +34,7 @@ func NovaTask(projectID project.ProjectID, titulo string) (*Task, error) {
 	}
 
 	return &Task{
-		id:        TaskID(shared.NovoID()),
+		id:        "", // Será gerado pelo repositório
 		projectID: projectID,
 		titulo:    titulo,
 		status:    ToDo,
@@ -168,5 +168,13 @@ func (t *Task) PodeMoverParaInReview(userID team.UserID) error {
 	if *t.assignee != userID {
 		return ErrSomenteAssigneePodeMoverInReview
 	}
+	return nil
+}
+
+func (t *Task) DefinirID(id TaskID) error {
+	if strings.TrimSpace(string(id)) == "" {
+		return shared.ErrIDInvalido
+	}
+	t.id = id
 	return nil
 }

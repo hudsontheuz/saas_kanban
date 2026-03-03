@@ -4,6 +4,8 @@ type CriarProjectRequest struct {
 	TeamID   string
 	LeaderID string
 
+	Nome string
+
 	PermitirSoltarDoingParaTodo bool
 }
 

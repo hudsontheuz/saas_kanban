@@ -3,11 +3,11 @@ package tests
 import (
 	"testing"
 
+	"github.com/hudsontheuz/saas_kanban/infrastructure/persistence/memory"
 	projectdto "github.com/hudsontheuz/saas_kanban/internal/application/project/dto"
 	projectusecase "github.com/hudsontheuz/saas_kanban/internal/application/project/usecase"
 	teamdto "github.com/hudsontheuz/saas_kanban/internal/application/team/dto"
 	teamusecase "github.com/hudsontheuz/saas_kanban/internal/application/team/usecase"
-	"github.com/hudsontheuz/saas_kanban/internal/infrastructure/persistence/memory"
 )
 
 func TestTeamProject_RegraUmProjectAtivoPorTeam(t *testing.T) {
@@ -28,6 +28,7 @@ func TestTeamProject_RegraUmProjectAtivoPorTeam(t *testing.T) {
 	_, err = ucCriarProject.Executar(projectdto.CriarProjectRequest{
 		TeamID:                      teamResp.TeamID,
 		LeaderID:                    "leader-1",
+		Nome:                        "Projeto 1",
 		PermitirSoltarDoingParaTodo: true,
 	})
 	if err != nil {
@@ -38,6 +39,7 @@ func TestTeamProject_RegraUmProjectAtivoPorTeam(t *testing.T) {
 	_, err = ucCriarProject.Executar(projectdto.CriarProjectRequest{
 		TeamID:   teamResp.TeamID,
 		LeaderID: "leader-1",
+		Nome:     "Projeto 2",
 	})
 	if err == nil {
 		t.Fatalf("esperava erro: já existe project ativo")

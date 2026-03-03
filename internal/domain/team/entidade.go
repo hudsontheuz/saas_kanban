@@ -22,7 +22,7 @@ func NovaTeam(nome string, leaderID UserID) (*Team, error) {
 	}
 
 	return &Team{
-		id:       TeamID(shared.NovoID()),
+		id:       "",
 		nome:     nome,
 		leaderID: leaderID,
 	}, nil
@@ -32,3 +32,11 @@ func (t *Team) ID() TeamID             { return t.id }
 func (t *Team) Nome() string           { return t.nome }
 func (t *Team) LeaderID() UserID       { return t.leaderID }
 func (t *Team) EhLeader(u UserID) bool { return t.leaderID == u }
+
+func (t *Team) DefinirID(id TeamID) error {
+	if id == "" {
+		return shared.ErrIDInvalido
+	}
+	t.id = id
+	return nil
+}

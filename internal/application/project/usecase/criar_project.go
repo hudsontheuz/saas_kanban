@@ -33,7 +33,7 @@ func (uc *CriarProjectUseCase) Executar(req dto.CriarProjectRequest) (dto.CriarP
 		return dto.CriarProjectResponse{}, ErrJaExisteProjectAtivo
 	}
 
-	p, err := project.NovoProject(teamID, project.ConfiguracoesProject{
+	p, err := project.NovoProject(teamID, req.Nome, project.ConfiguracoesProject{
 		PermitirSoltarDoingParaTodo: req.PermitirSoltarDoingParaTodo,
 	})
 	if err != nil {

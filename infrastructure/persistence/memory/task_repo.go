@@ -1,6 +1,7 @@
 package memory
 
 import (
+	"strconv"
 	"sync"
 
 	"github.com/hudsontheuz/saas_kanban/internal/domain/task"
@@ -8,17 +9,33 @@ import (
 )
 
 type TaskRepoEmMemoria struct {
-	mu    sync.RWMutex
-	dados map[task.TaskID]*task.Task
+	mu     sync.RWMutex
+	dados  map[task.TaskID]*task.Task
+	nextID int64
 }
 
 func NovoTaskRepoEmMemoria() *TaskRepoEmMemoria {
-	return &TaskRepoEmMemoria{dados: map[task.TaskID]*task.Task{}}
+	return &TaskRepoEmMemoria{
+		dados:  map[task.TaskID]*task.Task{},
+		nextID: 1,
+	}
 }
 
 func (r *TaskRepoEmMemoria) Salvar(tk *task.Task) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
+
+	if tk == nil {
+		return ErrNaoEncontrado
+	}
+
+	// Se vier sem ID, simula DB gerando ID
+	if string(tk.ID()) == "" {
+		id := task.TaskID(strconv.FormatInt(r.nextID, 10))
+		r.nextID++
+		_ = tk.DefinirID(id)
+	}
+
 	r.dados[tk.ID()] = tk
 	return nil
 }
@@ -26,6 +43,7 @@ func (r *TaskRepoEmMemoria) Salvar(tk *task.Task) error {
 func (r *TaskRepoEmMemoria) BuscarPorID(id task.TaskID) (*task.Task, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
+
 	tk, ok := r.dados[id]
 	if !ok {
 		return nil, ErrNaoEncontrado
