@@ -4,11 +4,17 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
-	handlers "github.com/hudsontheuz/saas_kanban/delivery/http/handlers"
+
+	authjwt "github.com/hudsontheuz/saas_kanban/internal/auth/infrastructure/jwt"
+	taskhttp "github.com/hudsontheuz/saas_kanban/internal/task/delivery/http"
 )
 
-func NewRouter(taskHandler *handlers.TaskHandler) http.Handler {
+// NewRouter monta o router principal, chamando Register() de cada módulo.
+func NewRouter(taskHandler *taskhttp.TaskHandler, validadorJWT *authjwt.Validador) http.Handler {
 	r := chi.NewRouter()
-	r.Post("/tasks/{id}/self-assign", taskHandler.SelfAssign)
+
+	// módulos
+	taskhttp.Register(r, taskHandler, validadorJWT)
+
 	return r
 }
