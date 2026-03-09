@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/hudsontheuz/saas_kanban/internal/project/domain"
-	"github.com/hudsontheuz/saas_kanban/internal/team/domain"
+	"github.com/hudsontheuz/saas_kanban/internal/user/domain"
 )
 
 func HidratarTask(
@@ -12,11 +12,11 @@ func HidratarTask(
 	projectID project.ProjectID,
 	titulo string,
 	status StatusTask,
-	assignee *team.UserID,
+	assignee *user.UserID,
 	pausada bool,
 	outcome *OutcomeTask,
 	deletedAt *time.Time,
-	deletedBy *team.UserID,
+	deletedBy *user.UserID,
 ) *Task {
 	return &Task{
 		id:        id,

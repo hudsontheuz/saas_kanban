@@ -8,7 +8,7 @@ import (
 	"github.com/hudsontheuz/saas_kanban/internal/task/application/dto"
 	taskports "github.com/hudsontheuz/saas_kanban/internal/task/application/ports"
 	"github.com/hudsontheuz/saas_kanban/internal/task/domain"
-	"github.com/hudsontheuz/saas_kanban/internal/team/domain"
+	"github.com/hudsontheuz/saas_kanban/internal/user/domain"
 )
 
 var ErrLimiteGlobalDoing = errors.New("limite global: usuário já possui task DOING ativa")
@@ -36,7 +36,7 @@ func (uc *SelfAssignTaskUseCase) Executar(req dto.SelfAssignRequest) error {
 		return project.ErrProjetoFechado
 	}
 
-	userID := team.UserID(req.UserID)
+	userID := user.UserID(req.UserID)
 
 	existe, err := uc.tasks.ExisteDoingAtivaParaUser(userID)
 	if err != nil {

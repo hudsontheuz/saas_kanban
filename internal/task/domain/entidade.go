@@ -6,7 +6,7 @@ import (
 
 	"github.com/hudsontheuz/saas_kanban/internal/project/domain"
 	shared "github.com/hudsontheuz/saas_kanban/internal/shared/errors"
-	"github.com/hudsontheuz/saas_kanban/internal/team/domain"
+	"github.com/hudsontheuz/saas_kanban/internal/user/domain"
 )
 
 type Task struct {
@@ -15,12 +15,12 @@ type Task struct {
 	titulo    string
 
 	status   StatusTask
-	assignee *team.UserID
+	assignee *user.UserID
 	isPaused bool
 	outcome  *OutcomeTask
 
 	deletedAt *time.Time
-	deletedBy *team.UserID
+	deletedBy *user.UserID
 }
 
 func NovaTask(projectID project.ProjectID, titulo string) (*Task, error) {
@@ -34,7 +34,7 @@ func NovaTask(projectID project.ProjectID, titulo string) (*Task, error) {
 	}
 
 	return &Task{
-		id:        "", // Será gerado pelo repositório
+		id:        "",
 		projectID: projectID,
 		titulo:    titulo,
 		status:    ToDo,
@@ -46,7 +46,7 @@ func (t *Task) ProjectID() project.ProjectID { return t.projectID }
 func (t *Task) Titulo() string               { return t.titulo }
 func (t *Task) Status() StatusTask           { return t.status }
 func (t *Task) IsPaused() bool               { return t.isPaused }
-func (t *Task) Assignee() *team.UserID       { return t.assignee }
+func (t *Task) Assignee() *user.UserID       { return t.assignee }
 func (t *Task) Outcome() *OutcomeTask        { return t.outcome }
 func (t *Task) DeletedAt() *time.Time        { return t.deletedAt }
 
@@ -57,7 +57,7 @@ func (t *Task) ValidarInvariantes() error {
 	return nil
 }
 
-func (t *Task) SelfAssign(userID team.UserID) error {
+func (t *Task) SelfAssign(userID user.UserID) error {
 	if t.status != ToDo {
 		return ErrTransicaoInvalida
 	}
@@ -93,7 +93,7 @@ func (t *Task) Retomar() error {
 	return nil
 }
 
-func (t *Task) PodePausarOuRetomar(userID team.UserID) error {
+func (t *Task) PodePausarOuRetomar(userID user.UserID) error {
 	if t.assignee == nil {
 		return ErrSemAssignee
 	}
@@ -132,7 +132,7 @@ func (t *Task) ReprovarParaAjustes() error {
 	if t.status != InReview {
 		return ErrReprovarSomenteInReview
 	}
-	t.status = Doing
+	t.status = ToDo
 	t.isPaused = false
 	return nil
 }
@@ -148,7 +148,7 @@ func (t *Task) RejeitarEmToDo() error {
 	return nil
 }
 
-func (t *Task) SoftDelete(quando time.Time, por team.UserID) error {
+func (t *Task) SoftDelete(quando time.Time, por user.UserID) error {
 	if por == "" {
 		return shared.ErrIDInvalido
 	}
@@ -158,7 +158,7 @@ func (t *Task) SoftDelete(quando time.Time, por team.UserID) error {
 	return nil
 }
 
-func (t *Task) PodeMoverParaInReview(userID team.UserID) error {
+func (t *Task) PodeMoverParaInReview(userID user.UserID) error {
 	if t.assignee == nil {
 		return ErrSemAssignee
 	}

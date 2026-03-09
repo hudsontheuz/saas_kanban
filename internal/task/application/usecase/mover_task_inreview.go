@@ -6,7 +6,7 @@ import (
 	"github.com/hudsontheuz/saas_kanban/internal/task/application/dto"
 	taskports "github.com/hudsontheuz/saas_kanban/internal/task/application/ports"
 	"github.com/hudsontheuz/saas_kanban/internal/task/domain"
-	"github.com/hudsontheuz/saas_kanban/internal/team/domain"
+	"github.com/hudsontheuz/saas_kanban/internal/user/domain"
 )
 
 type MoverParaInReviewUseCase struct {
@@ -32,7 +32,7 @@ func (uc *MoverParaInReviewUseCase) Executar(req dto.MoverParaInReviewRequest) e
 		return project.ErrProjetoFechado
 	}
 
-	userID := team.UserID(req.UserID)
+	userID := user.UserID(req.UserID)
 
 	if err := tk.PodeMoverParaInReview(userID); err != nil {
 		return err

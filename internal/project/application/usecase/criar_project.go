@@ -6,6 +6,7 @@ import (
 	"github.com/hudsontheuz/saas_kanban/internal/project/domain"
 	teamports "github.com/hudsontheuz/saas_kanban/internal/team/application/ports"
 	"github.com/hudsontheuz/saas_kanban/internal/team/domain"
+	"github.com/hudsontheuz/saas_kanban/internal/user/domain"
 )
 
 type CriarProjectUseCase struct {
@@ -19,7 +20,7 @@ func NovoCriarProjectUseCase(teams teamports.TeamRepository, projects projectpor
 
 func (uc *CriarProjectUseCase) Executar(req dto.CriarProjectRequest) (dto.CriarProjectResponse, error) {
 	teamID := team.TeamID(req.TeamID)
-	leaderID := team.UserID(req.LeaderID)
+	leaderID := user.UserID(req.LeaderID)
 
 	tm, err := uc.teams.BuscarPorID(teamID)
 	if err != nil {
