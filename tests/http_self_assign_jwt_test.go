@@ -10,6 +10,10 @@ import (
 	jwtlib "github.com/golang-jwt/jwt/v5"
 
 	deliveryhttp "github.com/hudsontheuz/saas_kanban/delivery/http"
+	authdto "github.com/hudsontheuz/saas_kanban/internal/auth/application/dto"
+	authusecase "github.com/hudsontheuz/saas_kanban/internal/auth/application/usecase"
+	authhttp "github.com/hudsontheuz/saas_kanban/internal/auth/delivery/http"
+	authhash "github.com/hudsontheuz/saas_kanban/internal/auth/infrastructure/hash"
 	authjwt "github.com/hudsontheuz/saas_kanban/internal/auth/infrastructure/jwt"
 	project "github.com/hudsontheuz/saas_kanban/internal/project/domain"
 	projectmemory "github.com/hudsontheuz/saas_kanban/internal/project/infrastructure/persistence/memory"
@@ -19,9 +23,11 @@ import (
 	task "github.com/hudsontheuz/saas_kanban/internal/task/domain"
 	taskmemory "github.com/hudsontheuz/saas_kanban/internal/task/infrastructure/persistence/memory"
 	team "github.com/hudsontheuz/saas_kanban/internal/team/domain"
+	usermemory "github.com/hudsontheuz/saas_kanban/internal/user/infrastructure/persistence/memory"
 )
 
 func TestHTTP_SelfAssign_ComJWT(t *testing.T) {
+	repoUsuario := usermemory.NovoUserRepoEmMemoria()
 	repoProjeto := projectmemory.NovoProjectRepoEmMemoria()
 	repoTarefa := taskmemory.NovoTaskRepoEmMemoria()
 
@@ -43,12 +49,21 @@ func TestHTTP_SelfAssign_ComJWT(t *testing.T) {
 	segredo := "segredo-teste"
 	emissor := "saas_kanban"
 
+	issuer, err := authjwt.NovoIssuer(segredo, emissor, time.Hour)
+	if err != nil {
+		t.Fatalf("erro criando issuer jwt: %v", err)
+	}
 	validador, err := authjwt.NovoValidador(segredo, emissor)
 	if err != nil {
 		t.Fatalf("erro criando validador jwt: %v", err)
 	}
 
-	router := deliveryhttp.NewRouter(handlerTarefa, validador)
+	hasher := authhash.NewBcryptHasher()
+	ucRegister := authusecase.NovoRegisterUseCase(repoUsuario, hasher, issuer)
+	ucLogin := authusecase.NovoLoginUseCase(repoUsuario, hasher, issuer)
+	handlerAuth := authhttp.NewAuthHandler(ucRegister, ucLogin)
+
+	router := deliveryhttp.NewRouter(handlerAuth, handlerTarefa, validador)
 	server := httptest.NewServer(router)
 	defer server.Close()
 
@@ -125,8 +140,38 @@ func TestHTTP_SelfAssign_ComJWT(t *testing.T) {
 			t.Fatalf("esperava ok=true, veio: %#v", body)
 		}
 
-		// sanity: garante que a regra foi aplicada
-		_ = taskdto.SelfAssignRequest{} // só pra manter import se você quiser remover validação depois
+		_ = taskdto.SelfAssignRequest{}
+	})
+
+	t.Run("token emitido pelo login também funciona", func(t *testing.T) {
+		_, err := ucRegister.Executar(authdto.RegisterRequest{Nome: "Matheus", Email: "matheus@teste.com", Senha: "123456"})
+		if err != nil {
+			t.Fatalf("erro no register: %v", err)
+		}
+
+		loginResp, err := ucLogin.Executar(authdto.LoginRequest{Email: "matheus@teste.com", Senha: "123456"})
+		if err != nil {
+			t.Fatalf("erro no login: %v", err)
+		}
+
+		tk2, err := task.NovaTask(p.ID(), "Task com token real")
+		if err != nil {
+			t.Fatalf("erro ao criar task: %v", err)
+		}
+		_ = repoTarefa.Salvar(tk2)
+
+		req, _ := http.NewRequest(http.MethodPost, server.URL+"/tasks/"+string(tk2.ID())+"/self-assign", nil)
+		req.Header.Set("Authorization", "Bearer "+loginResp.Token)
+
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatalf("request falhou: %v", err)
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			t.Fatalf("esperava 200, veio %d", resp.StatusCode)
+		}
 	})
 }
 

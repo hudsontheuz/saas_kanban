@@ -3,10 +3,11 @@ package jwt
 import (
 	"errors"
 	"fmt"
-	"strconv"
+	"strings"
 	"time"
 
 	jwtlib "github.com/golang-jwt/jwt/v5"
+	"github.com/hudsontheuz/saas_kanban/internal/user/domain"
 )
 
 var (
@@ -35,11 +36,9 @@ func NovoValidador(segredo, emissor string) (*Validador, error) {
 	}, nil
 }
 
-// ValidarEObterIDUsuario valida o JWT (HS256) e retorna o idUsuario a partir do claim "sub".
-// Convenção do projeto: "sub" é string numérica do ID do usuário.
-func (v *Validador) ValidarEObterIDUsuario(tokenStr string) (int64, error) {
+func (v *Validador) ValidarEObterIDUsuario(tokenStr string) (user.UserID, error) {
 	if tokenStr == "" {
-		return 0, ErrTokenInvalido
+		return "", ErrTokenInvalido
 	}
 
 	interpretador := jwtlib.NewParser(
@@ -51,7 +50,6 @@ func (v *Validador) ValidarEObterIDUsuario(tokenStr string) (int64, error) {
 	claims := &jwtlib.RegisteredClaims{}
 
 	token, err := interpretador.ParseWithClaims(tokenStr, claims, func(t *jwtlib.Token) (any, error) {
-		// HS256 apenas
 		if t.Method != jwtlib.SigningMethodHS256 {
 			return nil, fmt.Errorf("%w: método de assinatura não suportado", ErrTokenInvalido)
 		}
@@ -59,23 +57,18 @@ func (v *Validador) ValidarEObterIDUsuario(tokenStr string) (int64, error) {
 	})
 	if err != nil {
 		if errors.Is(err, jwtlib.ErrTokenExpired) {
-			return 0, ErrTokenExpirado
+			return "", ErrTokenExpirado
 		}
-		return 0, ErrTokenInvalido
+		return "", ErrTokenInvalido
 	}
 	if !token.Valid {
-		return 0, ErrTokenInvalido
+		return "", ErrTokenInvalido
 	}
 
-	sub := claims.Subject
+	sub := strings.TrimSpace(claims.Subject)
 	if sub == "" {
-		return 0, ErrSubInvalido
+		return "", ErrSubInvalido
 	}
 
-	idUsuario, convErr := strconv.ParseInt(sub, 10, 64)
-	if convErr != nil || idUsuario <= 0 {
-		return 0, ErrSubInvalido
-	}
-
-	return idUsuario, nil
+	return user.UserID(sub), nil
 }

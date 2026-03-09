@@ -10,7 +10,7 @@ import (
 	taskports "github.com/hudsontheuz/saas_kanban/internal/task/application/ports"
 	"github.com/hudsontheuz/saas_kanban/internal/task/domain"
 	"github.com/hudsontheuz/saas_kanban/internal/task/infrastructure/persistence/gorm/model"
-	"github.com/hudsontheuz/saas_kanban/internal/team/domain"
+	"github.com/hudsontheuz/saas_kanban/internal/user/domain"
 	"gorm.io/gorm"
 )
 
@@ -97,9 +97,9 @@ func (r *TaskRepo) BuscarPorID(id task.TaskID) (*task.Task, error) {
 		return nil, err
 	}
 
-	var domAssignee *team.UserID
+	var domAssignee *user.UserID
 	if m.UsuarioAtribuidoID != nil {
-		u := team.UserID(strconv.FormatInt(*m.UsuarioAtribuidoID, 10))
+		u := user.UserID(strconv.FormatInt(*m.UsuarioAtribuidoID, 10))
 		domAssignee = &u
 	}
 
@@ -122,7 +122,7 @@ func (r *TaskRepo) BuscarPorID(id task.TaskID) (*task.Task, error) {
 	), nil
 }
 
-func (r *TaskRepo) ExisteDoingAtivaParaUser(userID team.UserID) (bool, error) {
+func (r *TaskRepo) ExisteDoingAtivaParaUser(userID user.UserID) (bool, error) {
 	uid, err := parseID(string(userID))
 	if err != nil {
 		return false, err

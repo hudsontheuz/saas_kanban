@@ -6,7 +6,7 @@ import (
 	"github.com/hudsontheuz/saas_kanban/internal/task/application/dto"
 	taskports "github.com/hudsontheuz/saas_kanban/internal/task/application/ports"
 	"github.com/hudsontheuz/saas_kanban/internal/task/domain"
-	"github.com/hudsontheuz/saas_kanban/internal/team/domain"
+	"github.com/hudsontheuz/saas_kanban/internal/user/domain"
 )
 
 type RetomarTaskUseCase struct {
@@ -32,19 +32,16 @@ func (uc *RetomarTaskUseCase) Executar(req dto.RetomarTaskRequest) error {
 		return project.ErrProjetoFechado
 	}
 
-	userID := team.UserID(req.UserID)
+	userID := user.UserID(req.UserID)
 
 	if err := tk.PodePausarOuRetomar(userID); err != nil {
 		return err
 	}
 
-	// Regra global: só pode retomar se não existir outra DOING ativa
 	existe, err := uc.tasks.ExisteDoingAtivaParaUser(userID)
 	if err != nil {
 		return err
 	}
-	// cuidado: a própria task atual está em DOING, mas se ela está pausada, ela não conta.
-	// Nosso repo em memória já ignora pausadas, então aqui "existe" só será true se tiver OUTRA DOING ativa.
 	if existe {
 		return ErrLimiteGlobalDoing
 	}

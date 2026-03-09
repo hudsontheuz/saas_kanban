@@ -7,7 +7,7 @@ import (
 	projectports "github.com/hudsontheuz/saas_kanban/internal/project/application/ports"
 	"github.com/hudsontheuz/saas_kanban/internal/project/domain"
 	teamports "github.com/hudsontheuz/saas_kanban/internal/team/application/ports"
-	"github.com/hudsontheuz/saas_kanban/internal/team/domain"
+	"github.com/hudsontheuz/saas_kanban/internal/user/domain"
 )
 
 type FecharProjectUseCase struct {
@@ -30,7 +30,7 @@ func (uc *FecharProjectUseCase) Executar(req dto.FecharProjectRequest) error {
 		return err
 	}
 
-	leaderID := team.UserID(req.LeaderID)
+	leaderID := user.UserID(req.LeaderID)
 	if !tm.EhLeader(leaderID) {
 		return ErrSomenteLeaderPodeGerenciarProject
 	}

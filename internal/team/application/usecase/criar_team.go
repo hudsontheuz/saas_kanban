@@ -4,6 +4,7 @@ import (
 	"github.com/hudsontheuz/saas_kanban/internal/team/application/dto"
 	teamports "github.com/hudsontheuz/saas_kanban/internal/team/application/ports"
 	"github.com/hudsontheuz/saas_kanban/internal/team/domain"
+	"github.com/hudsontheuz/saas_kanban/internal/user/domain"
 )
 
 type CriarTeamUseCase struct {
@@ -15,7 +16,7 @@ func NovoCriarTeamUseCase(teams teamports.TeamRepository) *CriarTeamUseCase {
 }
 
 func (uc *CriarTeamUseCase) Executar(req dto.CriarTeamRequest) (dto.CriarTeamResponse, error) {
-	t, err := team.NovaTeam(req.Nome, team.UserID(req.LeaderID))
+	t, err := team.NovaTeam(req.Nome, user.UserID(req.LeaderID))
 	if err != nil {
 		return dto.CriarTeamResponse{}, err
 	}
