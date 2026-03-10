@@ -1,24 +1,23 @@
-# Binaries / build
 bin/
 dist/
 *.exe
 *.out
 
-# Go build cache (optional)
-*.test
 
-# Logs
+*.test
+*.zip
+
 *.log
 
-# IDE / editor
+
 .vscode/
 .idea/
 *.swp
 
-# OS files
+
 .DS_Store
 Thumbs.db
 
-# Environment / secrets
+
 .env
 .env.*
