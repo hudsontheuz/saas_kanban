@@ -32,7 +32,6 @@ Sistema Kanban com regras explícitas e comportamento modelado no domínio.
 ### 📝 Task (Tarefa)
 
 - Pertence a um projeto.
-- Pode ter sugestão de responsável (**SelectedAssignee**).
 - Só é assumida oficialmente quando alguém realiza **self-assign**.
 - Cada usuário pode ter **apenas 1 task em Doing por vez**.
 - Se reprovada em `InReview`, retorna para `ToDo`.
@@ -50,25 +49,34 @@ Este projeto segue uma abordagem inspirada em Clean Architecture + DDD leve.
 - **Application** → Casos de uso, DTOs e Ports (interfaces)
 - **Delivery (HTTP)** → Router/handlers/middlewares (chi)
 - **Infrastructure** → Implementações concretas (memória, PostgreSQL via GORM)
-- **Migrations** → Schema SQL versionado (golang-migrate)
+- **Migrations** → Schema SQL versionado
 - **Tests** → Validação de comportamento e regras
+
+### Contextos principais
+
+- **user** → identidade global do sistema
+- **auth** → cadastro, login, hash de senha, emissão e validação de JWT
+- **team** → equipe e liderança
+- **project** → projeto e configurações
+- **task** → fluxo das tarefas e invariantes
 
 ---
 
 ## ✅ Status atual
 
 - PostgreSQL via Docker (porta **5434**)
-- Migrations com `golang-migrate`
+- Migrations SQL criadas
 - Infra GORM criada (`infrastructure/persistence/gorm`)
-- Delivery HTTP preparada (`delivery/http`)
-- Primeira rota preparada: `POST /tasks/{id}/self-assign`
-- Autenticação real ainda não existe: será usado **fake auth** via middleware (dev)
+- Delivery HTTP preparado (`delivery/http`)
+- Contexto `user` separado de `team`
+- Autenticação com JWT (`register` e `login`)
+- Rota protegida: `POST /tasks/{id}/self-assign`
 
 ---
 
 ## 🐳 Subir Postgres (Docker)
 
-Exemplo (ajuste se você já tiver seu `docker-compose.yml`):
+Exemplo:
 
 ```bash
 docker run --name saas_kanban_pg \
@@ -77,47 +85,95 @@ docker run --name saas_kanban_pg \
   -e POSTGRES_DB=saas_kanban \
   -p 5434:5432 \
   -d postgres:16
-🗄️ Rodar migrations (golang-migrate)
+```
 
-Exemplo:
+## 🗄️ Rodar migrations
 
+```bash
 migrate -path migrations -database "postgres://postgres:postgres@localhost:5434/saas_kanban?sslmode=disable" up
+```
 
 Rollback:
 
+```bash
 migrate -path migrations -database "postgres://postgres:postgres@localhost:5434/saas_kanban?sslmode=disable" down 1
-▶️ Rodar a API
+```
 
-A API usa DB_URL:
+## ▶️ Rodar a API
 
+```bash
 export DB_URL="postgres://postgres:postgres@localhost:5434/saas_kanban?sslmode=disable"
+export JWT_SECRET="dev-secret"
+export JWT_ISSUER="saas_kanban"
 go run ./cmd/api
-🌐 Endpoints (inicial)
-POST /tasks/{id}/self-assign
+```
 
-Assume a task para o usuário autenticado (via fake auth).
+---
 
-Header (dev):
+## 🌐 Endpoints atuais
 
-X-User-Id: <id>
+### Registrar usuário
+
+`POST /auth/register`
+
+Body:
+
+```json
+{
+  "nome": "Matheus",
+  "email": "matheus@teste.com",
+  "senha": "123456"
+}
+```
+
+### Login
+
+`POST /auth/login`
+
+Body:
+
+```json
+{
+  "email": "matheus@teste.com",
+  "senha": "123456"
+}
+```
+
+### Self assign protegido por JWT
+
+`POST /tasks/{id}/self-assign`
+
+Header:
+
+```text
+Authorization: Bearer <token>
+```
 
 Exemplo:
 
+```bash
 curl -X POST \
-  -H "X-User-Id: 1" \
+  -H "Authorization: Bearer SEU_TOKEN" \
   http://localhost:8080/tasks/10/self-assign
+```
 
 Resposta esperada:
 
+```json
 {"ok":true}
+```
 
 Erros comuns:
 
-404 se task não existe
+- `404` se a task não existe
+- `409` se o usuário já tem uma task em Doing não pausada
+- `400` para violações de regra de negócio
+- `401` para token ausente, inválido ou expirado
 
-409 se o usuário já tem uma task em Doing não pausada
+---
 
-400 para violações de regra de negócio
+## 🧪 Como rodar os testes
 
-🧪 Como rodar os testes
+```bash
 go test ./...
+```

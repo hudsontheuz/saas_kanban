@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"github.com/hudsontheuz/saas_kanban/internal/task/domain"
-	"github.com/hudsontheuz/saas_kanban/internal/team/domain"
+	"github.com/hudsontheuz/saas_kanban/internal/user/domain"
 )
 
 type TaskRepoEmMemoria struct {
@@ -29,7 +29,6 @@ func (r *TaskRepoEmMemoria) Salvar(tk *task.Task) error {
 		return ErrNaoEncontrado
 	}
 
-	// Se vier sem ID, simula DB gerando ID
 	if string(tk.ID()) == "" {
 		id := task.TaskID(strconv.FormatInt(r.nextID, 10))
 		r.nextID++
@@ -51,7 +50,7 @@ func (r *TaskRepoEmMemoria) BuscarPorID(id task.TaskID) (*task.Task, error) {
 	return tk, nil
 }
 
-func (r *TaskRepoEmMemoria) ExisteDoingAtivaParaUser(userID team.UserID) (bool, error) {
+func (r *TaskRepoEmMemoria) ExisteDoingAtivaParaUser(userID user.UserID) (bool, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 

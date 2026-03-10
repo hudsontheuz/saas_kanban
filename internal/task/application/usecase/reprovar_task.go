@@ -7,7 +7,7 @@ import (
 	taskports "github.com/hudsontheuz/saas_kanban/internal/task/application/ports"
 	"github.com/hudsontheuz/saas_kanban/internal/task/domain"
 	teamports "github.com/hudsontheuz/saas_kanban/internal/team/application/ports"
-	"github.com/hudsontheuz/saas_kanban/internal/team/domain"
+	"github.com/hudsontheuz/saas_kanban/internal/user/domain"
 )
 
 type ReprovarTaskUseCase struct {
@@ -39,7 +39,7 @@ func (uc *ReprovarTaskUseCase) Executar(req dto.ReprovarTaskRequest) error {
 		return err
 	}
 
-	leaderID := team.UserID(req.LeaderID)
+	leaderID := user.UserID(req.LeaderID)
 	if !tm.EhLeader(leaderID) {
 		return ErrSomenteLeaderPodeDecidir
 	}
