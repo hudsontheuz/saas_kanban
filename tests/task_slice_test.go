@@ -4,17 +4,16 @@ import (
 	"testing"
 	"time"
 
-	project "github.com/hudsontheuz/saas_kanban/internal/project/domain"
-	projectmemory "github.com/hudsontheuz/saas_kanban/internal/project/infrastructure/persistence/memory"
-	dto "github.com/hudsontheuz/saas_kanban/internal/task/application/dto"
-	usecase "github.com/hudsontheuz/saas_kanban/internal/task/application/usecase"
-	taskmemory "github.com/hudsontheuz/saas_kanban/internal/task/infrastructure/persistence/memory"
-	team "github.com/hudsontheuz/saas_kanban/internal/team/domain"
+	"github.com/hudsontheuz/saas_kanban/infrastructure/persistence/memory"
+	"github.com/hudsontheuz/saas_kanban/internal/application/task/dto"
+	usecase "github.com/hudsontheuz/saas_kanban/internal/application/task/usecase"
+	"github.com/hudsontheuz/saas_kanban/internal/domain/project"
+	"github.com/hudsontheuz/saas_kanban/internal/domain/team"
 )
 
 func TestSlice_CriarTask_OK(t *testing.T) {
-	projectRepo := projectmemory.NovoProjectRepoEmMemoria()
-	taskRepo := taskmemory.NovoTaskRepoEmMemoria()
+	projectRepo := memory.NovoProjectRepoEmMemoria()
+	taskRepo := memory.NovoTaskRepoEmMemoria()
 
 	p, err := project.NovoProject(team.TeamID("1"), "Projeto Teste", project.ConfiguracoesProject{
 		PermitirSoltarDoingParaTodo: true,
@@ -41,8 +40,8 @@ func TestSlice_CriarTask_OK(t *testing.T) {
 }
 
 func TestSlice_ProjectFechado_BloqueiaCriarTask(t *testing.T) {
-	projectRepo := projectmemory.NovoProjectRepoEmMemoria()
-	taskRepo := taskmemory.NovoTaskRepoEmMemoria()
+	projectRepo := memory.NovoProjectRepoEmMemoria()
+	taskRepo := memory.NovoTaskRepoEmMemoria()
 
 	p, err := project.NovoProject(team.TeamID("1"), "Projeto Teste", project.ConfiguracoesProject{})
 	if err != nil {

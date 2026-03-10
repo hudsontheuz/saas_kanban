@@ -3,18 +3,17 @@ package tests
 import (
 	"testing"
 
-	project "github.com/hudsontheuz/saas_kanban/internal/project/domain"
-	projectmemory "github.com/hudsontheuz/saas_kanban/internal/project/infrastructure/persistence/memory"
-	dto "github.com/hudsontheuz/saas_kanban/internal/task/application/dto"
-	usecase "github.com/hudsontheuz/saas_kanban/internal/task/application/usecase"
-	task "github.com/hudsontheuz/saas_kanban/internal/task/domain"
-	taskmemory "github.com/hudsontheuz/saas_kanban/internal/task/infrastructure/persistence/memory"
-	team "github.com/hudsontheuz/saas_kanban/internal/team/domain"
+	"github.com/hudsontheuz/saas_kanban/infrastructure/persistence/memory"
+	"github.com/hudsontheuz/saas_kanban/internal/application/task/dto"
+	usecase "github.com/hudsontheuz/saas_kanban/internal/application/task/usecase"
+	"github.com/hudsontheuz/saas_kanban/internal/domain/project"
+	"github.com/hudsontheuz/saas_kanban/internal/domain/task"
+	"github.com/hudsontheuz/saas_kanban/internal/domain/team"
 )
 
 func TestPause_NaoContaNoLimiteGlobal_SelfAssignEmOutraTaskFunciona(t *testing.T) {
-	projectRepo := projectmemory.NovoProjectRepoEmMemoria()
-	taskRepo := taskmemory.NovoTaskRepoEmMemoria()
+	projectRepo := memory.NovoProjectRepoEmMemoria()
+	taskRepo := memory.NovoTaskRepoEmMemoria()
 
 	p, err := project.NovoProject(team.TeamID("1"), "Projeto Teste", project.ConfiguracoesProject{})
 	if err != nil {
@@ -51,8 +50,8 @@ func TestPause_NaoContaNoLimiteGlobal_SelfAssignEmOutraTaskFunciona(t *testing.T
 }
 
 func TestRetomar_FalhaSeExisteOutraDoingAtiva(t *testing.T) {
-	projectRepo := projectmemory.NovoProjectRepoEmMemoria()
-	taskRepo := taskmemory.NovoTaskRepoEmMemoria()
+	projectRepo := memory.NovoProjectRepoEmMemoria()
+	taskRepo := memory.NovoTaskRepoEmMemoria()
 
 	p, err := project.NovoProject(team.TeamID("1"), "Projeto Teste", project.ConfiguracoesProject{})
 	if err != nil {
@@ -79,10 +78,11 @@ func TestRetomar_FalhaSeExisteOutraDoingAtiva(t *testing.T) {
 
 	_ = ucAssign.Executar(dto.SelfAssignRequest{TaskID: string(t1.ID()), UserID: user})
 	_ = ucPause.Executar(dto.PausarTaskRequest{TaskID: string(t1.ID()), UserID: user})
+
 	_ = ucAssign.Executar(dto.SelfAssignRequest{TaskID: string(t2.ID()), UserID: user})
 
-	// tentar retomar t1 deve falhar porque t2 está DOING ativa
-	if err := ucResume.Executar(dto.RetomarTaskRequest{TaskID: string(t1.ID()), UserID: user}); err == nil {
-		t.Fatalf("esperava erro ao retomar: existe outra DOING ativa")
+	err = ucResume.Executar(dto.RetomarTaskRequest{TaskID: string(t1.ID()), UserID: user})
+	if err == nil {
+		t.Fatalf("esperava erro ao retomar com outra DOING ativa")
 	}
 }
