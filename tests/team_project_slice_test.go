@@ -3,16 +3,17 @@ package tests
 import (
 	"testing"
 
-	"github.com/hudsontheuz/saas_kanban/infrastructure/persistence/memory"
-	projectdto "github.com/hudsontheuz/saas_kanban/internal/application/project/dto"
-	projectusecase "github.com/hudsontheuz/saas_kanban/internal/application/project/usecase"
-	teamdto "github.com/hudsontheuz/saas_kanban/internal/application/team/dto"
-	teamusecase "github.com/hudsontheuz/saas_kanban/internal/application/team/usecase"
+	projectdto "github.com/hudsontheuz/saas_kanban/internal/project/application/dto"
+	projectusecase "github.com/hudsontheuz/saas_kanban/internal/project/application/usecase"
+	projectmemory "github.com/hudsontheuz/saas_kanban/internal/project/infrastructure/persistence/memory"
+	teamdto "github.com/hudsontheuz/saas_kanban/internal/team/application/dto"
+	teamusecase "github.com/hudsontheuz/saas_kanban/internal/team/application/usecase"
+	teammemory "github.com/hudsontheuz/saas_kanban/internal/team/infrastructure/persistence/memory"
 )
 
 func TestTeamProject_RegraUmProjectAtivoPorTeam(t *testing.T) {
-	teamRepo := memory.NovoTeamRepoEmMemoria()
-	projectRepo := memory.NovoProjectRepoEmMemoria()
+	teamRepo := teammemory.NovoTeamRepoEmMemoria()
+	projectRepo := projectmemory.NovoProjectRepoEmMemoria()
 
 	ucCriarTeam := teamusecase.NovoCriarTeamUseCase(teamRepo)
 	teamResp, err := ucCriarTeam.Executar(teamdto.CriarTeamRequest{

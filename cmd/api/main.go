@@ -6,11 +6,13 @@ import (
 	"os"
 	"time"
 
-	delivery "github.com/hudsontheuz/saas_kanban/delivery/http"
-	handlers "github.com/hudsontheuz/saas_kanban/delivery/http/handlers"
+	deliveryhttp "github.com/hudsontheuz/saas_kanban/delivery/http"
 	gormdb "github.com/hudsontheuz/saas_kanban/infrastructure/persistence/gorm"
-	"github.com/hudsontheuz/saas_kanban/infrastructure/persistence/gorm/repo"
-	taskusecase "github.com/hudsontheuz/saas_kanban/internal/application/task/usecase"
+	authjwt "github.com/hudsontheuz/saas_kanban/internal/auth/infrastructure/jwt"
+	projectrepo "github.com/hudsontheuz/saas_kanban/internal/project/infrastructure/persistence/gorm/repo"
+	taskusecase "github.com/hudsontheuz/saas_kanban/internal/task/application/usecase"
+	taskhttp "github.com/hudsontheuz/saas_kanban/internal/task/delivery/http"
+	taskrepo "github.com/hudsontheuz/saas_kanban/internal/task/infrastructure/persistence/gorm/repo"
 )
 
 func main() {
@@ -19,25 +21,33 @@ func main() {
 		log.Fatalf("db: %v", err)
 	}
 
-	projectRepo := repo.NewProjectRepo(db)
-	taskRepo := repo.NewTaskRepo(db)
+	repoProjeto := projectrepo.NewProjectRepo(db)
+	repoTarefa := taskrepo.NewTaskRepo(db)
 
-	selfAssignUC := taskusecase.NovoSelfAssignTaskUseCase(projectRepo, taskRepo)
+	casoUsoSelfAssign := taskusecase.NovoSelfAssignTaskUseCase(repoProjeto, repoTarefa)
+	handlerTarefa := taskhttp.NewTaskHandler(casoUsoSelfAssign)
 
-	taskHandler := handlers.NewTaskHandler(selfAssignUC)
-	router := delivery.NewRouter(taskHandler)
+	segredoJWT := os.Getenv("JWT_SECRET")
+	emissorJWT := os.Getenv("JWT_ISSUER") // opcional; default no validador = "saas_kanban"
 
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
+	validadorJWT, err := authjwt.NovoValidador(segredoJWT, emissorJWT)
+	if err != nil {
+		log.Fatalf("jwt: %v", err)
+	}
+
+	router := deliveryhttp.NewRouter(handlerTarefa, validadorJWT)
+
+	porta := os.Getenv("PORT")
+	if porta == "" {
+		porta = "8080"
 	}
 
 	srv := &http.Server{
-		Addr:              ":" + port,
+		Addr:              ":" + porta,
 		Handler:           router,
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 
-	log.Printf("listening on :%s", port)
+	log.Printf("listening on :%s", porta)
 	log.Fatal(srv.ListenAndServe())
 }
