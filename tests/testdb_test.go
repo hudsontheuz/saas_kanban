@@ -11,6 +11,7 @@ import (
 
 	project "github.com/hudsontheuz/saas_kanban/internal/project/domain"
 	projectrepo "github.com/hudsontheuz/saas_kanban/internal/project/infrastructure/persistence/gorm/repo"
+	"github.com/hudsontheuz/saas_kanban/internal/shared/envx"
 	task "github.com/hudsontheuz/saas_kanban/internal/task/domain"
 	taskrepo "github.com/hudsontheuz/saas_kanban/internal/task/infrastructure/persistence/gorm/repo"
 	team "github.com/hudsontheuz/saas_kanban/internal/team/domain"
@@ -23,6 +24,10 @@ import (
 
 func openTestDB(t *testing.T) *gorm.DB {
 	t.Helper()
+
+	if err := envx.Load(); err != nil {
+		t.Fatalf("erro carregando .env: %v", err)
+	}
 
 	dsn := strings.TrimSpace(os.Getenv("TEST_DB_URL"))
 	if dsn == "" {

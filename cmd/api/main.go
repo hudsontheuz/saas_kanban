@@ -17,6 +17,7 @@ import (
 	taskusecase "github.com/hudsontheuz/saas_kanban/internal/task/application/usecase"
 	taskhttp "github.com/hudsontheuz/saas_kanban/internal/task/delivery/http"
 	taskrepo "github.com/hudsontheuz/saas_kanban/internal/task/infrastructure/persistence/gorm/repo"
+	teamrepo "github.com/hudsontheuz/saas_kanban/internal/team/infrastructure/persistence/gorm/repo"
 	userrepo "github.com/hudsontheuz/saas_kanban/internal/user/infrastructure/persistence/gorm/repo"
 )
 
@@ -33,6 +34,7 @@ func main() {
 	repoUsuario := userrepo.NewUserRepo(db)
 	repoProjeto := projectrepo.NewProjectRepo(db)
 	repoTarefa := taskrepo.NewTaskRepo(db)
+	repoTeam := teamrepo.NewTeamRepo(db)
 
 	segredoJWT := os.Getenv("JWT_SECRET")
 	emissorJWT := os.Getenv("JWT_ISSUER")
@@ -52,8 +54,23 @@ func main() {
 	ucLogin := authusecase.NovoLoginUseCase(repoUsuario, hasher, issuerJWT)
 	handlerAuth := authhttp.NewAuthHandler(ucRegister, ucLogin)
 
+	casoUsoCriarTask := taskusecase.NovoCriarTaskUseCase(repoProjeto, repoTarefa)
 	casoUsoSelfAssign := taskusecase.NovoSelfAssignTaskUseCase(repoProjeto, repoTarefa)
-	handlerTarefa := taskhttp.NewTaskHandler(casoUsoSelfAssign)
+	casoUsoPausarTask := taskusecase.NovoPausarTaskUseCase(repoProjeto, repoTarefa)
+	casoUsoRetomarTask := taskusecase.NovoRetomarTaskUseCase(repoProjeto, repoTarefa)
+	casoUsoInReview := taskusecase.NovoMoverParaInReviewUseCase(repoProjeto, repoTarefa)
+	casoUsoApprove := taskusecase.NovoAprovarTaskUseCase(repoProjeto, repoTeam, repoTarefa)
+	casoUsoReject := taskusecase.NovoReprovarTaskUseCase(repoProjeto, repoTeam, repoTarefa)
+
+	handlerTarefa := taskhttp.NewTaskHandlerWorkflow(
+		casoUsoCriarTask,
+		casoUsoSelfAssign,
+		casoUsoPausarTask,
+		casoUsoRetomarTask,
+		casoUsoInReview,
+		casoUsoApprove,
+		casoUsoReject,
+	)
 
 	router := deliveryhttp.NewRouter(handlerAuth, handlerTarefa, validadorJWT)
 
