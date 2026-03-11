@@ -4,85 +4,127 @@ import (
 	"testing"
 
 	project "github.com/hudsontheuz/saas_kanban/internal/project/domain"
-	projectmemory "github.com/hudsontheuz/saas_kanban/internal/project/infrastructure/persistence/memory"
+	projectrepo "github.com/hudsontheuz/saas_kanban/internal/project/infrastructure/persistence/gorm/repo"
 	dto "github.com/hudsontheuz/saas_kanban/internal/task/application/dto"
 	usecase "github.com/hudsontheuz/saas_kanban/internal/task/application/usecase"
 	task "github.com/hudsontheuz/saas_kanban/internal/task/domain"
-	taskmemory "github.com/hudsontheuz/saas_kanban/internal/task/infrastructure/persistence/memory"
-	team "github.com/hudsontheuz/saas_kanban/internal/team/domain"
+	taskrepo "github.com/hudsontheuz/saas_kanban/internal/task/infrastructure/persistence/gorm/repo"
 )
 
 func TestPause_NaoContaNoLimiteGlobal_SelfAssignEmOutraTaskFunciona(t *testing.T) {
-	projectRepo := projectmemory.NovoProjectRepoEmMemoria()
-	taskRepo := taskmemory.NovoTaskRepoEmMemoria()
+	db := openTestDB(t)
 
-	p, err := project.NovoProject(team.TeamID("1"), "Projeto Teste", project.ConfiguracoesProject{})
-	if err != nil {
-		t.Fatalf("erro ao criar project: %v", err)
-	}
-	_ = projectRepo.Salvar(p)
+	projectRepo := projectrepo.NewProjectRepo(db)
+	taskRepo := taskrepo.NewTaskRepo(db)
 
-	t1, err := task.NovaTask(p.ID(), "T1")
-	if err != nil {
-		t.Fatalf("erro ao criar task t1: %v", err)
-	}
-	t2, err := task.NovaTask(p.ID(), "T2")
-	if err != nil {
-		t.Fatalf("erro ao criar task t2: %v", err)
-	}
-	_ = taskRepo.Salvar(t1)
-	_ = taskRepo.Salvar(t2)
-
-	user := "2"
+	leaderID := seedUser(t, db, "Leader Teste")
+	userID := seedUser(t, db, "Executor Teste")
+	teamID := seedTeam(t, db, "Team Teste", leaderID)
+	projectID := seedProject(t, db, teamID, "Projeto Teste", project.ConfiguracoesProject{})
+	t1ID := seedTask(t, db, projectID, "T1")
+	t2ID := seedTask(t, db, projectID, "T2")
 
 	ucAssign := usecase.NovoSelfAssignTaskUseCase(projectRepo, taskRepo)
-	if err := ucAssign.Executar(dto.SelfAssignRequest{TaskID: string(t1.ID()), UserID: user}); err != nil {
+	if err := ucAssign.Executar(dto.SelfAssignRequest{
+		TaskID: string(t1ID),
+		UserID: string(userID),
+	}); err != nil {
 		t.Fatalf("esperava self-assign em t1 ok, veio: %v", err)
 	}
 
 	ucPause := usecase.NovoPausarTaskUseCase(projectRepo, taskRepo)
-	if err := ucPause.Executar(dto.PausarTaskRequest{TaskID: string(t1.ID()), UserID: user}); err != nil {
+	if err := ucPause.Executar(dto.PausarTaskRequest{
+		TaskID: string(t1ID),
+		UserID: string(userID),
+	}); err != nil {
 		t.Fatalf("esperava pausar ok, veio: %v", err)
 	}
 
-	if err := ucAssign.Executar(dto.SelfAssignRequest{TaskID: string(t2.ID()), UserID: user}); err != nil {
+	if err := ucAssign.Executar(dto.SelfAssignRequest{
+		TaskID: string(t2ID),
+		UserID: string(userID),
+	}); err != nil {
 		t.Fatalf("esperava self-assign em t2 ok (t1 pausada), veio: %v", err)
+	}
+
+	t1, err := taskRepo.BuscarPorID(t1ID)
+	if err != nil {
+		t.Fatalf("erro buscando t1 após pausa: %v", err)
+	}
+	if !t1.IsPaused() {
+		t.Fatalf("esperava t1 pausada")
+	}
+
+	t2, err := taskRepo.BuscarPorID(t2ID)
+	if err != nil {
+		t.Fatalf("erro buscando t2 após self-assign: %v", err)
+	}
+	if t2.Status() != task.Doing {
+		t.Fatalf("esperava t2 em DOING, veio %s", t2.Status())
+	}
+	if t2.Assignee() == nil || *t2.Assignee() != userID {
+		t.Fatalf("esperava t2 atribuída ao usuário %s", userID)
 	}
 }
 
 func TestRetomar_FalhaSeExisteOutraDoingAtiva(t *testing.T) {
-	projectRepo := projectmemory.NovoProjectRepoEmMemoria()
-	taskRepo := taskmemory.NovoTaskRepoEmMemoria()
+	db := openTestDB(t)
 
-	p, err := project.NovoProject(team.TeamID("1"), "Projeto Teste", project.ConfiguracoesProject{})
-	if err != nil {
-		t.Fatalf("erro ao criar project: %v", err)
-	}
-	_ = projectRepo.Salvar(p)
+	projectRepo := projectrepo.NewProjectRepo(db)
+	taskRepo := taskrepo.NewTaskRepo(db)
 
-	t1, err := task.NovaTask(p.ID(), "T1")
-	if err != nil {
-		t.Fatalf("erro ao criar task t1: %v", err)
-	}
-	t2, err := task.NovaTask(p.ID(), "T2")
-	if err != nil {
-		t.Fatalf("erro ao criar task t2: %v", err)
-	}
-	_ = taskRepo.Salvar(t1)
-	_ = taskRepo.Salvar(t2)
-
-	user := "2"
+	leaderID := seedUser(t, db, "Leader Teste")
+	userID := seedUser(t, db, "Executor Teste")
+	teamID := seedTeam(t, db, "Team Teste", leaderID)
+	projectID := seedProject(t, db, teamID, "Projeto Teste", project.ConfiguracoesProject{})
+	t1ID := seedTask(t, db, projectID, "T1")
+	t2ID := seedTask(t, db, projectID, "T2")
 
 	ucAssign := usecase.NovoSelfAssignTaskUseCase(projectRepo, taskRepo)
 	ucPause := usecase.NovoPausarTaskUseCase(projectRepo, taskRepo)
 	ucResume := usecase.NovoRetomarTaskUseCase(projectRepo, taskRepo)
 
-	_ = ucAssign.Executar(dto.SelfAssignRequest{TaskID: string(t1.ID()), UserID: user})
-	_ = ucPause.Executar(dto.PausarTaskRequest{TaskID: string(t1.ID()), UserID: user})
-	_ = ucAssign.Executar(dto.SelfAssignRequest{TaskID: string(t2.ID()), UserID: user})
+	if err := ucAssign.Executar(dto.SelfAssignRequest{
+		TaskID: string(t1ID),
+		UserID: string(userID),
+	}); err != nil {
+		t.Fatalf("erro no self-assign de t1: %v", err)
+	}
 
-	// tentar retomar t1 deve falhar porque t2 está DOING ativa
-	if err := ucResume.Executar(dto.RetomarTaskRequest{TaskID: string(t1.ID()), UserID: user}); err == nil {
+	if err := ucPause.Executar(dto.PausarTaskRequest{
+		TaskID: string(t1ID),
+		UserID: string(userID),
+	}); err != nil {
+		t.Fatalf("erro ao pausar t1: %v", err)
+	}
+
+	if err := ucAssign.Executar(dto.SelfAssignRequest{
+		TaskID: string(t2ID),
+		UserID: string(userID),
+	}); err != nil {
+		t.Fatalf("erro no self-assign de t2: %v", err)
+	}
+
+	if err := ucResume.Executar(dto.RetomarTaskRequest{
+		TaskID: string(t1ID),
+		UserID: string(userID),
+	}); err == nil {
 		t.Fatalf("esperava erro ao retomar: existe outra DOING ativa")
+	}
+
+	t1, err := taskRepo.BuscarPorID(t1ID)
+	if err != nil {
+		t.Fatalf("erro buscando t1 após retomar falhar: %v", err)
+	}
+	if !t1.IsPaused() {
+		t.Fatalf("esperava t1 continuar pausada")
+	}
+
+	t2, err := taskRepo.BuscarPorID(t2ID)
+	if err != nil {
+		t.Fatalf("erro buscando t2 após retomar falhar: %v", err)
+	}
+	if t2.Status() != task.Doing || t2.IsPaused() {
+		t.Fatalf("esperava t2 continuar em DOING ativa")
 	}
 }

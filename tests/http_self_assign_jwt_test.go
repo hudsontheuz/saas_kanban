@@ -16,32 +16,40 @@ import (
 	authhash "github.com/hudsontheuz/saas_kanban/internal/auth/infrastructure/hash"
 	authjwt "github.com/hudsontheuz/saas_kanban/internal/auth/infrastructure/jwt"
 	project "github.com/hudsontheuz/saas_kanban/internal/project/domain"
-	projectmemory "github.com/hudsontheuz/saas_kanban/internal/project/infrastructure/persistence/memory"
+	projectrepo "github.com/hudsontheuz/saas_kanban/internal/project/infrastructure/persistence/gorm/repo"
 	taskdto "github.com/hudsontheuz/saas_kanban/internal/task/application/dto"
 	taskusecase "github.com/hudsontheuz/saas_kanban/internal/task/application/usecase"
 	taskhttp "github.com/hudsontheuz/saas_kanban/internal/task/delivery/http"
 	task "github.com/hudsontheuz/saas_kanban/internal/task/domain"
-	taskmemory "github.com/hudsontheuz/saas_kanban/internal/task/infrastructure/persistence/memory"
-	team "github.com/hudsontheuz/saas_kanban/internal/team/domain"
-	usermemory "github.com/hudsontheuz/saas_kanban/internal/user/infrastructure/persistence/memory"
+	taskrepo "github.com/hudsontheuz/saas_kanban/internal/task/infrastructure/persistence/gorm/repo"
+	userrepo "github.com/hudsontheuz/saas_kanban/internal/user/infrastructure/persistence/gorm/repo"
 )
 
 func TestHTTP_SelfAssign_ComJWT(t *testing.T) {
-	repoUsuario := usermemory.NovoUserRepoEmMemoria()
-	repoProjeto := projectmemory.NovoProjectRepoEmMemoria()
-	repoTarefa := taskmemory.NovoTaskRepoEmMemoria()
+	db := openTestDB(t)
 
-	p, err := project.NovoProject(team.TeamID("1"), "Projeto Teste", project.ConfiguracoesProject{})
+	repoUsuario := userrepo.NewUserRepo(db)
+	repoProjeto := projectrepo.NewProjectRepo(db)
+	repoTarefa := taskrepo.NewTaskRepo(db)
+
+	leaderID := seedUser(t, db, "Leader Projeto")
+	teamID := seedTeam(t, db, "Team Projeto", leaderID)
+
+	p, err := project.NovoProject(teamID, "Projeto Teste", project.ConfiguracoesProject{})
 	if err != nil {
 		t.Fatalf("erro ao criar project: %v", err)
 	}
-	_ = repoProjeto.Salvar(p)
+	if err := repoProjeto.Salvar(p); err != nil {
+		t.Fatalf("erro ao salvar project: %v", err)
+	}
 
 	tk, err := task.NovaTask(p.ID(), "Task Teste")
 	if err != nil {
 		t.Fatalf("erro ao criar task: %v", err)
 	}
-	_ = repoTarefa.Salvar(tk)
+	if err := repoTarefa.Salvar(tk); err != nil {
+		t.Fatalf("erro ao salvar task: %v", err)
+	}
 
 	casoUso := taskusecase.NovoSelfAssignTaskUseCase(repoProjeto, repoTarefa)
 	handlerTarefa := taskhttp.NewTaskHandler(casoUso)
@@ -98,7 +106,8 @@ func TestHTTP_SelfAssign_ComJWT(t *testing.T) {
 	})
 
 	t.Run("token expirado retorna 401", func(t *testing.T) {
-		tokenExpirado := gerarJWT(t, segredo, emissor, "2", time.Now().Add(-1*time.Minute))
+		userID := seedUser(t, db, "Usuario Expirado")
+		tokenExpirado := gerarJWT(t, segredo, emissor, string(userID), time.Now().Add(-1*time.Minute))
 
 		req, _ := http.NewRequest(http.MethodPost, url, nil)
 		req.Header.Set("Authorization", "Bearer "+tokenExpirado)
@@ -115,9 +124,11 @@ func TestHTTP_SelfAssign_ComJWT(t *testing.T) {
 	})
 
 	t.Run("token válido retorna 200 e ok true", func(t *testing.T) {
-		tokenValido := gerarJWT(t, segredo, emissor, "2", time.Now().Add(1*time.Hour))
+		userID := seedUser(t, db, "Usuario Valido")
+		tkValidaID := seedTask(t, db, p.ID(), "Task token válido")
+		tokenValido := gerarJWT(t, segredo, emissor, string(userID), time.Now().Add(1*time.Hour))
 
-		req, _ := http.NewRequest(http.MethodPost, url, nil)
+		req, _ := http.NewRequest(http.MethodPost, server.URL+"/tasks/"+string(tkValidaID)+"/self-assign", nil)
 		req.Header.Set("Authorization", "Bearer "+tokenValido)
 
 		resp, err := http.DefaultClient.Do(req)
@@ -144,23 +155,26 @@ func TestHTTP_SelfAssign_ComJWT(t *testing.T) {
 	})
 
 	t.Run("token emitido pelo login também funciona", func(t *testing.T) {
-		_, err := ucRegister.Executar(authdto.RegisterRequest{Nome: "Matheus", Email: "matheus@teste.com", Senha: "123456"})
+		_, err := ucRegister.Executar(authdto.RegisterRequest{
+			Nome:  "Matheus",
+			Email: "matheus@teste.com",
+			Senha: "123456",
+		})
 		if err != nil {
 			t.Fatalf("erro no register: %v", err)
 		}
 
-		loginResp, err := ucLogin.Executar(authdto.LoginRequest{Email: "matheus@teste.com", Senha: "123456"})
+		loginResp, err := ucLogin.Executar(authdto.LoginRequest{
+			Email: "matheus@teste.com",
+			Senha: "123456",
+		})
 		if err != nil {
 			t.Fatalf("erro no login: %v", err)
 		}
 
-		tk2, err := task.NovaTask(p.ID(), "Task com token real")
-		if err != nil {
-			t.Fatalf("erro ao criar task: %v", err)
-		}
-		_ = repoTarefa.Salvar(tk2)
+		tk2ID := seedTask(t, db, p.ID(), "Task com token real")
 
-		req, _ := http.NewRequest(http.MethodPost, server.URL+"/tasks/"+string(tk2.ID())+"/self-assign", nil)
+		req, _ := http.NewRequest(http.MethodPost, server.URL+"/tasks/"+string(tk2ID)+"/self-assign", nil)
 		req.Header.Set("Authorization", "Bearer "+loginResp.Token)
 
 		resp, err := http.DefaultClient.Do(req)

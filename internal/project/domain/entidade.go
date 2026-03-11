@@ -53,6 +53,7 @@ func (p *Project) TeamID() team.TeamID            { return p.teamID }
 func (p *Project) Nome() string                   { return p.nome }
 func (p *Project) Settings() ConfiguracoesProject { return p.settings }
 func (p *Project) EstaFechado() bool              { return p.status == ProjectFechado }
+func (p *Project) FechadoEm() *time.Time          { return p.fechadoEm }
 
 func (p *Project) Fechar(agora time.Time) {
 	if p.EstaFechado() {

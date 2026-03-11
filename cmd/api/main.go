@@ -13,6 +13,7 @@ import (
 	authhash "github.com/hudsontheuz/saas_kanban/internal/auth/infrastructure/hash"
 	authjwt "github.com/hudsontheuz/saas_kanban/internal/auth/infrastructure/jwt"
 	projectrepo "github.com/hudsontheuz/saas_kanban/internal/project/infrastructure/persistence/gorm/repo"
+	"github.com/hudsontheuz/saas_kanban/internal/shared/envx"
 	taskusecase "github.com/hudsontheuz/saas_kanban/internal/task/application/usecase"
 	taskhttp "github.com/hudsontheuz/saas_kanban/internal/task/delivery/http"
 	taskrepo "github.com/hudsontheuz/saas_kanban/internal/task/infrastructure/persistence/gorm/repo"
@@ -20,6 +21,10 @@ import (
 )
 
 func main() {
+	if err := envx.Load(); err != nil {
+		log.Fatalf("env: %v", err)
+	}
+
 	db, err := gormdb.Open()
 	if err != nil {
 		log.Fatalf("db: %v", err)

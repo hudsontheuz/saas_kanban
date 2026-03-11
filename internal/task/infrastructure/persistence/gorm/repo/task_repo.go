@@ -1,16 +1,17 @@
 package repo
 
 import (
+	"errors"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/hudsontheuz/saas_kanban/internal/project/domain"
+	project "github.com/hudsontheuz/saas_kanban/internal/project/domain"
 	shared "github.com/hudsontheuz/saas_kanban/internal/shared/errors"
 	taskports "github.com/hudsontheuz/saas_kanban/internal/task/application/ports"
-	"github.com/hudsontheuz/saas_kanban/internal/task/domain"
+	task "github.com/hudsontheuz/saas_kanban/internal/task/domain"
 	"github.com/hudsontheuz/saas_kanban/internal/task/infrastructure/persistence/gorm/model"
-	"github.com/hudsontheuz/saas_kanban/internal/user/domain"
+	user "github.com/hudsontheuz/saas_kanban/internal/user/domain"
 	"gorm.io/gorm"
 )
 
@@ -91,7 +92,7 @@ func (r *TaskRepo) BuscarPorID(id task.TaskID) (*task.Task, error) {
 
 	var m model.Tarefa
 	if err := r.db.First(&m, i).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, shared.ErrNaoEncontrado
 		}
 		return nil, err
