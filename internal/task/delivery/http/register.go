@@ -7,9 +7,34 @@ import (
 	authjwt "github.com/hudsontheuz/saas_kanban/internal/auth/infrastructure/jwt"
 )
 
-// Register monta as rotas HTTP do módulo Task.
 func Register(r chi.Router, handler *TaskHandler, validadorJWT *authjwt.Validador) {
-	// MVP incremental: só esta rota por enquanto
-	r.With(authmiddleware.AutenticacaoJWT(validadorJWT)).
-		Post("/tasks/{id}/self-assign", handler.SelfAssign)
+	auth := r.With(authmiddleware.AutenticacaoJWT(validadorJWT))
+
+	if handler.create != nil {
+		auth.Post("/projects/{id}/tasks", handler.Create)
+	}
+
+	if handler.selfAssign != nil {
+		auth.Post("/tasks/{id}/self-assign", handler.SelfAssign)
+	}
+
+	if handler.pause != nil {
+		auth.Post("/tasks/{id}/pause", handler.Pause)
+	}
+
+	if handler.resume != nil {
+		auth.Post("/tasks/{id}/resume", handler.Resume)
+	}
+
+	if handler.inReview != nil {
+		auth.Post("/tasks/{id}/in-review", handler.InReview)
+	}
+
+	if handler.approve != nil {
+		auth.Post("/tasks/{id}/approve", handler.Approve)
+	}
+
+	if handler.reject != nil {
+		auth.Post("/tasks/{id}/reject", handler.Reject)
+	}
 }
