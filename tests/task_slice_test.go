@@ -5,18 +5,22 @@ import (
 	"time"
 
 	project "github.com/hudsontheuz/saas_kanban/internal/project/domain"
-	projectmemory "github.com/hudsontheuz/saas_kanban/internal/project/infrastructure/persistence/memory"
+	projectrepo "github.com/hudsontheuz/saas_kanban/internal/project/infrastructure/persistence/gorm/repo"
 	dto "github.com/hudsontheuz/saas_kanban/internal/task/application/dto"
 	usecase "github.com/hudsontheuz/saas_kanban/internal/task/application/usecase"
-	taskmemory "github.com/hudsontheuz/saas_kanban/internal/task/infrastructure/persistence/memory"
-	team "github.com/hudsontheuz/saas_kanban/internal/team/domain"
+	taskrepo "github.com/hudsontheuz/saas_kanban/internal/task/infrastructure/persistence/gorm/repo"
 )
 
 func TestSlice_CriarTask_OK(t *testing.T) {
-	projectRepo := projectmemory.NovoProjectRepoEmMemoria()
-	taskRepo := taskmemory.NovoTaskRepoEmMemoria()
+	db := openTestDB(t)
 
-	p, err := project.NovoProject(team.TeamID("1"), "Projeto Teste", project.ConfiguracoesProject{
+	leaderID := seedUser(t, db, "Leader Projeto")
+	teamID := seedTeam(t, db, "Team Teste", leaderID)
+
+	projectRepo := projectrepo.NewProjectRepo(db)
+	taskRepo := taskrepo.NewTaskRepo(db)
+
+	p, err := project.NovoProject(teamID, "Projeto Teste", project.ConfiguracoesProject{
 		PermitirSoltarDoingParaTodo: true,
 	})
 	if err != nil {
@@ -30,7 +34,7 @@ func TestSlice_CriarTask_OK(t *testing.T) {
 	resp, err := uc.Executar(dto.CriarTaskRequest{
 		ProjectID: string(p.ID()),
 		Titulo:    "Primeira task",
-		CriadorID: "1",
+		CriadorID: string(leaderID),
 	})
 	if err != nil {
 		t.Fatalf("erro inesperado: %v", err)
@@ -41,15 +45,23 @@ func TestSlice_CriarTask_OK(t *testing.T) {
 }
 
 func TestSlice_ProjectFechado_BloqueiaCriarTask(t *testing.T) {
-	projectRepo := projectmemory.NovoProjectRepoEmMemoria()
-	taskRepo := taskmemory.NovoTaskRepoEmMemoria()
+	db := openTestDB(t)
 
-	p, err := project.NovoProject(team.TeamID("1"), "Projeto Teste", project.ConfiguracoesProject{})
+	leaderID := seedUser(t, db, "Leader Projeto")
+	teamID := seedTeam(t, db, "Team Teste", leaderID)
+
+	projectRepo := projectrepo.NewProjectRepo(db)
+	taskRepo := taskrepo.NewTaskRepo(db)
+
+	p, err := project.NovoProject(teamID, "Projeto Teste", project.ConfiguracoesProject{})
 	if err != nil {
 		t.Fatalf("erro ao criar project: %v", err)
 	}
 	p.Fechar(time.Now().UTC())
-	_ = projectRepo.Salvar(p)
+
+	if err := projectRepo.Salvar(p); err != nil {
+		t.Fatalf("erro ao salvar project: %v", err)
+	}
 
 	uc := usecase.NovoCriarTaskUseCase(projectRepo, taskRepo)
 	_, err = uc.Executar(dto.CriarTaskRequest{

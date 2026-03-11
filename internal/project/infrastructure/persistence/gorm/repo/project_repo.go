@@ -1,15 +1,16 @@
 package repo
 
 import (
+	"errors"
 	"strconv"
 	"strings"
 	"time"
 
 	projectports "github.com/hudsontheuz/saas_kanban/internal/project/application/ports"
-	"github.com/hudsontheuz/saas_kanban/internal/project/domain"
+	project "github.com/hudsontheuz/saas_kanban/internal/project/domain"
 	"github.com/hudsontheuz/saas_kanban/internal/project/infrastructure/persistence/gorm/model"
 	shared "github.com/hudsontheuz/saas_kanban/internal/shared/errors"
-	"github.com/hudsontheuz/saas_kanban/internal/team/domain"
+	team "github.com/hudsontheuz/saas_kanban/internal/team/domain"
 	"gorm.io/gorm"
 )
 
@@ -31,10 +32,9 @@ func (r *ProjectRepo) Salvar(p *project.Project) error {
 	}
 
 	status := "ACTIVE"
-	var fechadoEm *time.Time = nil
+	fechadoEm := p.FechadoEm()
 	if p.EstaFechado() {
 		status = "CLOSED"
-		// você não tem getter de fechadoEm; por enquanto fica nil
 	}
 
 	permitir := p.Settings().PermitirSoltarDoingParaTodo
@@ -78,14 +78,14 @@ func (r *ProjectRepo) BuscarPorID(id project.ProjectID) (*project.Project, error
 
 	var m model.Projeto
 	if err := r.db.First(&m, pid).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, shared.ErrNaoEncontrado
 		}
 		return nil, err
 	}
 
 	// Você ainda não tem HidratarProject no domínio.
-	// -> Crie domain/project/hidratar.go (vou te mandar se quiser já).
+	// -> Crie domain/project/hidratar.go .
 	return project.HidratarProject(
 		project.ProjectID(strconv.FormatInt(m.ID, 10)),
 		team.TeamID(strconv.FormatInt(m.EquipeID, 10)),
@@ -105,7 +105,7 @@ func (r *ProjectRepo) BuscarAtivoPorTeamID(teamID team.TeamID) (*project.Project
 	var m model.Projeto
 	err = r.db.Where("equipe_id = ? AND status = 'ACTIVE' AND deleted_at IS NULL", tid).First(&m).Error
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, shared.ErrNaoEncontrado
 		}
 		return nil, err

@@ -14,17 +14,19 @@ import (
 	authhttp "github.com/hudsontheuz/saas_kanban/internal/auth/delivery/http"
 	authhash "github.com/hudsontheuz/saas_kanban/internal/auth/infrastructure/hash"
 	authjwt "github.com/hudsontheuz/saas_kanban/internal/auth/infrastructure/jwt"
-	projectmemory "github.com/hudsontheuz/saas_kanban/internal/project/infrastructure/persistence/memory"
+	projectrepo "github.com/hudsontheuz/saas_kanban/internal/project/infrastructure/persistence/gorm/repo"
 	taskusecase "github.com/hudsontheuz/saas_kanban/internal/task/application/usecase"
 	taskhttp "github.com/hudsontheuz/saas_kanban/internal/task/delivery/http"
-	taskmemory "github.com/hudsontheuz/saas_kanban/internal/task/infrastructure/persistence/memory"
-	usermemory "github.com/hudsontheuz/saas_kanban/internal/user/infrastructure/persistence/memory"
+	taskrepo "github.com/hudsontheuz/saas_kanban/internal/task/infrastructure/persistence/gorm/repo"
+	userrepo "github.com/hudsontheuz/saas_kanban/internal/user/infrastructure/persistence/gorm/repo"
 )
 
 func TestHTTP_Auth_RegisterELogin(t *testing.T) {
-	repoUsuario := usermemory.NovoUserRepoEmMemoria()
-	repoProjeto := projectmemory.NovoProjectRepoEmMemoria()
-	repoTarefa := taskmemory.NovoTaskRepoEmMemoria()
+	db := openTestDB(t)
+
+	repoUsuario := userrepo.NewUserRepo(db)
+	repoProjeto := projectrepo.NewProjectRepo(db)
+	repoTarefa := taskrepo.NewTaskRepo(db)
 
 	segredo := "segredo-teste"
 	emissor := "saas_kanban"
@@ -48,7 +50,12 @@ func TestHTTP_Auth_RegisterELogin(t *testing.T) {
 	server := httptest.NewServer(router)
 	defer server.Close()
 
-	registerBody, _ := json.Marshal(authdto.RegisterRequest{Nome: "Matheus", Email: "hudson@teste.com", Senha: "123456"})
+	registerBody, _ := json.Marshal(authdto.RegisterRequest{
+		Nome:  "Matheus",
+		Email: "hudson@teste.com",
+		Senha: "123456",
+	})
+
 	resp, err := http.Post(server.URL+"/auth/register", "application/json", bytes.NewReader(registerBody))
 	if err != nil {
 		t.Fatalf("erro no register: %v", err)
@@ -72,16 +79,22 @@ func TestHTTP_Auth_RegisterELogin(t *testing.T) {
 		t.Fatalf("erro no register duplicado: %v", err)
 	}
 	defer resp.Body.Close()
+
 	if resp.StatusCode != http.StatusConflict {
 		t.Fatalf("esperava 409 no register duplicado, veio %d", resp.StatusCode)
 	}
 
-	loginBody, _ := json.Marshal(authdto.LoginRequest{Email: "hudson@teste.com", Senha: "123456"})
+	loginBody, _ := json.Marshal(authdto.LoginRequest{
+		Email: "hudson@teste.com",
+		Senha: "123456",
+	})
+
 	resp, err = http.Post(server.URL+"/auth/login", "application/json", bytes.NewReader(loginBody))
 	if err != nil {
 		t.Fatalf("erro no login: %v", err)
 	}
 	defer resp.Body.Close()
+
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("esperava 200 no login, veio %d", resp.StatusCode)
 	}
@@ -94,12 +107,17 @@ func TestHTTP_Auth_RegisterELogin(t *testing.T) {
 		t.Fatalf("login deveria retornar token e user_id: %#v", loginResp)
 	}
 
-	loginInvalidoBody, _ := json.Marshal(authdto.LoginRequest{Email: "hudson@teste.com", Senha: "errada"})
+	loginInvalidoBody, _ := json.Marshal(authdto.LoginRequest{
+		Email: "hudson@teste.com",
+		Senha: "errada",
+	})
+
 	resp, err = http.Post(server.URL+"/auth/login", "application/json", bytes.NewReader(loginInvalidoBody))
 	if err != nil {
 		t.Fatalf("erro no login inválido: %v", err)
 	}
 	defer resp.Body.Close()
+
 	if resp.StatusCode != http.StatusUnauthorized {
 		t.Fatalf("esperava 401 no login inválido, veio %d", resp.StatusCode)
 	}
