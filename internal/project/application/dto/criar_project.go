@@ -10,5 +10,5 @@ type CriarProjectRequest struct {
 }
 
 type CriarProjectResponse struct {
-	ProjectID string
+	ProjectID string `json:"project_id"`
 }
