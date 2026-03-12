@@ -72,7 +72,7 @@ func TestHTTP_TaskFullWorkflow_Approve(t *testing.T) {
 		ucReject,
 	)
 
-	router := deliveryhttp.NewRouter(handlerAuth, handlerTask, validador)
+	router := deliveryhttp.NewRouter(handlerAuth, nil, handlerTask, validador)
 	server := httptest.NewServer(router)
 	defer server.Close()
 

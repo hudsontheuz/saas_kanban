@@ -71,7 +71,7 @@ func TestHTTP_SelfAssign_ComJWT(t *testing.T) {
 	ucLogin := authusecase.NovoLoginUseCase(repoUsuario, hasher, issuer)
 	handlerAuth := authhttp.NewAuthHandler(ucRegister, ucLogin)
 
-	router := deliveryhttp.NewRouter(handlerAuth, handlerTarefa, validador)
+	router := deliveryhttp.NewRouter(handlerAuth, nil, handlerTarefa, validador)
 	server := httptest.NewServer(router)
 	defer server.Close()
 
