@@ -5,7 +5,7 @@ import (
 	"time"
 
 	shared "github.com/hudsontheuz/saas_kanban/internal/shared/errors"
-	"github.com/hudsontheuz/saas_kanban/internal/team/domain"
+	team "github.com/hudsontheuz/saas_kanban/internal/team/domain"
 )
 
 type ProjectID string
@@ -54,13 +54,15 @@ func (p *Project) Nome() string                   { return p.nome }
 func (p *Project) Settings() ConfiguracoesProject { return p.settings }
 func (p *Project) EstaFechado() bool              { return p.status == ProjectFechado }
 func (p *Project) FechadoEm() *time.Time          { return p.fechadoEm }
+func (p *Project) Status() StatusProject          { return p.status }
 
-func (p *Project) Fechar(agora time.Time) {
+func (p *Project) Fechar(agora time.Time) error {
 	if p.EstaFechado() {
-		return
+		return ErrProjetoFechado
 	}
 	p.status = ProjectFechado
 	p.fechadoEm = &agora
+	return nil
 }
 
 func (p *Project) DefinirID(id ProjectID) error {
@@ -68,5 +70,13 @@ func (p *Project) DefinirID(id ProjectID) error {
 		return shared.ErrIDInvalido
 	}
 	p.id = id
+	return nil
+}
+
+func (p *Project) AtualizarSettings(settings ConfiguracoesProject) error {
+	if p.EstaFechado() {
+		return ErrProjetoFechado
+	}
+	p.settings = settings
 	return nil
 }

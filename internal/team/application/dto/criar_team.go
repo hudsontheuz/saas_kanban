@@ -6,5 +6,5 @@ type CriarTeamRequest struct {
 }
 
 type CriarTeamResponse struct {
-	TeamID string
+	TeamID string `json:"team_id"`
 }

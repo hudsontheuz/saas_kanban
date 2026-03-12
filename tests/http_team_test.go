@@ -55,7 +55,7 @@ func TestHTTP_Team_Create(t *testing.T) {
 	ucCriarTeam := teamusecase.NovoCriarTeamUseCase(repoTeam)
 	handlerTeam := teamhttp.NewTeamHandler(ucCriarTeam)
 
-	router := deliveryhttp.NewRouter(handlerAuth, handlerTeam, handlerTask, validador)
+	router := deliveryhttp.NewRouter(handlerAuth, handlerTeam, nil, handlerTask, validador)
 	server := httptest.NewServer(router)
 	defer server.Close()
 

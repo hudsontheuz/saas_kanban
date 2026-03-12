@@ -1,12 +1,15 @@
 package usecase
 
 import (
+	"errors"
+
 	"github.com/hudsontheuz/saas_kanban/internal/project/application/dto"
 	projectports "github.com/hudsontheuz/saas_kanban/internal/project/application/ports"
-	"github.com/hudsontheuz/saas_kanban/internal/project/domain"
+	project "github.com/hudsontheuz/saas_kanban/internal/project/domain"
+	shared "github.com/hudsontheuz/saas_kanban/internal/shared/errors"
 	teamports "github.com/hudsontheuz/saas_kanban/internal/team/application/ports"
-	"github.com/hudsontheuz/saas_kanban/internal/team/domain"
-	"github.com/hudsontheuz/saas_kanban/internal/user/domain"
+	team "github.com/hudsontheuz/saas_kanban/internal/team/domain"
+	user "github.com/hudsontheuz/saas_kanban/internal/user/domain"
 )
 
 type CriarProjectUseCase struct {
@@ -32,6 +35,8 @@ func (uc *CriarProjectUseCase) Executar(req dto.CriarProjectRequest) (dto.CriarP
 
 	if _, err := uc.projects.BuscarAtivoPorTeamID(teamID); err == nil {
 		return dto.CriarProjectResponse{}, ErrJaExisteProjectAtivo
+	} else if !errors.Is(err, shared.ErrNaoEncontrado) {
+		return dto.CriarProjectResponse{}, err
 	}
 
 	p, err := project.NovoProject(teamID, req.Nome, project.ConfiguracoesProject{

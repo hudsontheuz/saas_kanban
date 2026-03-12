@@ -12,6 +12,8 @@ import (
 	authhttp "github.com/hudsontheuz/saas_kanban/internal/auth/delivery/http"
 	authhash "github.com/hudsontheuz/saas_kanban/internal/auth/infrastructure/hash"
 	authjwt "github.com/hudsontheuz/saas_kanban/internal/auth/infrastructure/jwt"
+	projectusecase "github.com/hudsontheuz/saas_kanban/internal/project/application/usecase"
+	projecthttp "github.com/hudsontheuz/saas_kanban/internal/project/delivery/http"
 	projectrepo "github.com/hudsontheuz/saas_kanban/internal/project/infrastructure/persistence/gorm/repo"
 	"github.com/hudsontheuz/saas_kanban/internal/shared/envx"
 	taskusecase "github.com/hudsontheuz/saas_kanban/internal/task/application/usecase"
@@ -59,6 +61,18 @@ func main() {
 	casoUsoCriarTeam := teamusecase.NovoCriarTeamUseCase(repoTeam)
 	handlerTeam := teamhttp.NewTeamHandler(casoUsoCriarTeam)
 
+	ucCriarProject := projectusecase.NovoCriarProjectUseCase(repoTeam, repoProjeto)
+	ucBuscarProjectAtivo := projectusecase.NovoBuscarProjectAtivoUseCase(repoProjeto)
+	ucAtualizarSettingsProject := projectusecase.NovoAtualizarSettingsProjectUseCase(repoTeam, repoProjeto)
+	ucFecharProject := projectusecase.NovoFecharProjectUseCase(repoTeam, repoProjeto)
+
+	handlerProject := projecthttp.NewProjectHandler(
+		ucCriarProject,
+		ucBuscarProjectAtivo,
+		ucAtualizarSettingsProject,
+		ucFecharProject,
+	)
+
 	casoUsoCriarTask := taskusecase.NovoCriarTaskUseCase(repoProjeto, repoTarefa)
 	casoUsoSelfAssign := taskusecase.NovoSelfAssignTaskUseCase(repoProjeto, repoTarefa)
 	casoUsoPausarTask := taskusecase.NovoPausarTaskUseCase(repoProjeto, repoTarefa)
@@ -77,7 +91,13 @@ func main() {
 		casoUsoReject,
 	)
 
-	router := deliveryhttp.NewRouter(handlerAuth, handlerTeam, handlerTarefa, validadorJWT)
+	router := deliveryhttp.NewRouter(
+		handlerAuth,
+		handlerTeam,
+		handlerProject,
+		handlerTarefa,
+		validadorJWT,
+	)
 
 	porta := os.Getenv("PORT")
 	if porta == "" {
