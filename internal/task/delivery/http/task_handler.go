@@ -16,13 +16,14 @@ import (
 )
 
 type TaskHandler struct {
-	create     *taskusecase.CriarTaskUseCase
-	selfAssign *taskusecase.SelfAssignTaskUseCase
-	pause      *taskusecase.PausarTaskUseCase
-	resume     *taskusecase.RetomarTaskUseCase
-	inReview   *taskusecase.MoverParaInReviewUseCase
-	approve    *taskusecase.AprovarTaskUseCase
-	reject     *taskusecase.ReprovarTaskUseCase
+	create        *taskusecase.CriarTaskUseCase
+	listByProject *taskusecase.ListarTasksPorProjectUseCase
+	selfAssign    *taskusecase.SelfAssignTaskUseCase
+	pause         *taskusecase.PausarTaskUseCase
+	resume        *taskusecase.RetomarTaskUseCase
+	inReview      *taskusecase.MoverParaInReviewUseCase
+	approve       *taskusecase.AprovarTaskUseCase
+	reject        *taskusecase.ReprovarTaskUseCase
 }
 
 func NewTaskHandler(selfAssign *taskusecase.SelfAssignTaskUseCase) *TaskHandler {
@@ -33,6 +34,7 @@ func NewTaskHandler(selfAssign *taskusecase.SelfAssignTaskUseCase) *TaskHandler 
 
 func NewTaskHandlerWorkflow(
 	create *taskusecase.CriarTaskUseCase,
+	listByProject *taskusecase.ListarTasksPorProjectUseCase,
 	selfAssign *taskusecase.SelfAssignTaskUseCase,
 	pause *taskusecase.PausarTaskUseCase,
 	resume *taskusecase.RetomarTaskUseCase,
@@ -41,13 +43,14 @@ func NewTaskHandlerWorkflow(
 	reject *taskusecase.ReprovarTaskUseCase,
 ) *TaskHandler {
 	return &TaskHandler{
-		create:     create,
-		selfAssign: selfAssign,
-		pause:      pause,
-		resume:     resume,
-		inReview:   inReview,
-		approve:    approve,
-		reject:     reject,
+		create:        create,
+		listByProject: listByProject,
+		selfAssign:    selfAssign,
+		pause:         pause,
+		resume:        resume,
+		inReview:      inReview,
+		approve:       approve,
+		reject:        reject,
 	}
 }
 
@@ -81,6 +84,32 @@ func (h *TaskHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusCreated, resp)
+}
+
+func (h *TaskHandler) ListByProject(w http.ResponseWriter, r *http.Request) {
+	projectID := chi.URLParam(r, "id")
+
+	_, ok := authctx.IDUsuarioDoContexto(r.Context())
+	if !ok {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
+		return
+	}
+
+	var status *string
+	if s := r.URL.Query().Get("status"); s != "" {
+		status = &s
+	}
+
+	resp, err := h.listByProject.Executar(taskdto.ListarTasksPorProjectRequest{
+		ProjectID: projectID,
+		Status:    status,
+	})
+	if err != nil {
+		writeTaskError(w, err)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, resp)
 }
 
 func (h *TaskHandler) SelfAssign(w http.ResponseWriter, r *http.Request) {
