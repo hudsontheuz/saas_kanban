@@ -51,6 +51,7 @@ func NovoProject(teamID team.TeamID, nome string, settings ConfiguracoesProject)
 func (p *Project) ID() ProjectID                  { return p.id }
 func (p *Project) TeamID() team.TeamID            { return p.teamID }
 func (p *Project) Nome() string                   { return p.nome }
+func (p *Project) Status() StatusProject          { return p.status }
 func (p *Project) Settings() ConfiguracoesProject { return p.settings }
 func (p *Project) EstaFechado() bool              { return p.status == ProjectFechado }
 func (p *Project) FechadoEm() *time.Time          { return p.fechadoEm }

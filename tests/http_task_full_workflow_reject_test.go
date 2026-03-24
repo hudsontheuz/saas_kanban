@@ -64,6 +64,7 @@ func TestHTTP_TaskFullWorkflow_Reject(t *testing.T) {
 
 	handlerTask := taskhttp.NewTaskHandlerWorkflow(
 		ucCriarTask,
+		taskusecase.NovoListarTasksPorProjectUseCase(repoProjeto, repoTarefa),
 		ucSelfAssign,
 		ucPausarTask,
 		ucRetomarTask,
@@ -72,7 +73,7 @@ func TestHTTP_TaskFullWorkflow_Reject(t *testing.T) {
 		ucReject,
 	)
 
-	router := deliveryhttp.NewRouter(handlerAuth, nil, handlerTask, validador)
+	router := deliveryhttp.NewRouter(handlerAuth, nil, nil, handlerTask, validador)
 	server := httptest.NewServer(router)
 	defer server.Close()
 
