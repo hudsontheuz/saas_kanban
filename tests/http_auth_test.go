@@ -46,7 +46,7 @@ func TestHTTP_Auth_RegisterELogin(t *testing.T) {
 	handlerAuth := authhttp.NewAuthHandler(ucRegister, ucLogin)
 
 	handlerTask := taskhttp.NewTaskHandler(taskusecase.NovoSelfAssignTaskUseCase(repoProjeto, repoTarefa))
-	router := deliveryhttp.NewRouter(handlerAuth, nil, handlerTask, validador)
+	router := deliveryhttp.NewRouter(handlerAuth, nil, nil, handlerTask, validador)
 	server := httptest.NewServer(router)
 	defer server.Close()
 
