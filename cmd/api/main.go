@@ -74,6 +74,7 @@ func main() {
 	)
 
 	casoUsoCriarTask := taskusecase.NovoCriarTaskUseCase(repoProjeto, repoTarefa)
+	casoUsoListarTasks := taskusecase.NovoListarTasksPorProjectUseCase(repoProjeto, repoTarefa)
 	casoUsoSelfAssign := taskusecase.NovoSelfAssignTaskUseCase(repoProjeto, repoTarefa)
 	casoUsoPausarTask := taskusecase.NovoPausarTaskUseCase(repoProjeto, repoTarefa)
 	casoUsoRetomarTask := taskusecase.NovoRetomarTaskUseCase(repoProjeto, repoTarefa)
@@ -81,8 +82,9 @@ func main() {
 	casoUsoApprove := taskusecase.NovoAprovarTaskUseCase(repoProjeto, repoTeam, repoTarefa)
 	casoUsoReject := taskusecase.NovoReprovarTaskUseCase(repoProjeto, repoTeam, repoTarefa)
 
-	handlerTarefa := taskhttp.NewTaskHandlerWorkflow(
+	handlerTarefa := taskhttp.NewTaskHandlerWorkflowWithList(
 		casoUsoCriarTask,
+		casoUsoListarTasks,
 		casoUsoSelfAssign,
 		casoUsoPausarTask,
 		casoUsoRetomarTask,

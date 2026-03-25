@@ -8,10 +8,18 @@ import (
 )
 
 func Register(r chi.Router, handler *TaskHandler, validadorJWT *authjwt.Validador) {
+	if handler == nil {
+		return
+	}
+
 	auth := r.With(authmiddleware.AutenticacaoJWT(validadorJWT))
 
 	if handler.create != nil {
 		auth.Post("/projects/{id}/tasks", handler.Create)
+	}
+
+	if handler.listByProject != nil {
+		auth.Get("/projects/{id}/tasks", handler.ListByProject)
 	}
 
 	if handler.selfAssign != nil {
