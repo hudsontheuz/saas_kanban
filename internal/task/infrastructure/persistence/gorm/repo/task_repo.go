@@ -123,6 +123,52 @@ func (r *TaskRepo) BuscarPorID(id task.TaskID) (*task.Task, error) {
 	), nil
 }
 
+func (r *TaskRepo) ListarPorProjectID(projectID project.ProjectID, status *task.StatusTask) ([]*task.Task, error) {
+	pid, err := parseID(string(projectID))
+	if err != nil {
+		return nil, err
+	}
+
+	query := r.db.Where("projeto_id = ? AND deleted_at IS NULL", pid).Order("id ASC")
+	if status != nil {
+		query = query.Where("status = ?", string(*status))
+	}
+
+	var models []model.Tarefa
+	if err := query.Find(&models).Error; err != nil {
+		return nil, err
+	}
+
+	items := make([]*task.Task, 0, len(models))
+	for _, m := range models {
+		var domAssignee *user.UserID
+		if m.UsuarioAtribuidoID != nil {
+			u := user.UserID(strconv.FormatInt(*m.UsuarioAtribuidoID, 10))
+			domAssignee = &u
+		}
+
+		var domOutcome *task.OutcomeTask
+		if m.Outcome != nil {
+			o := task.OutcomeTask(*m.Outcome)
+			domOutcome = &o
+		}
+
+		items = append(items, task.HidratarTask(
+			task.TaskID(strconv.FormatInt(m.ID, 10)),
+			project.ProjectID(strconv.FormatInt(m.ProjetoID, 10)),
+			m.Titulo,
+			task.StatusTask(m.Status),
+			domAssignee,
+			m.Pausada,
+			domOutcome,
+			m.DeletedAt,
+			nil,
+		))
+	}
+
+	return items, nil
+}
+
 func (r *TaskRepo) ExisteDoingAtivaParaUser(userID user.UserID) (bool, error) {
 	uid, err := parseID(string(userID))
 	if err != nil {
