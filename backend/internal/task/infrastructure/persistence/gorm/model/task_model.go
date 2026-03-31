@@ -7,6 +7,8 @@ type Tarefa struct {
 	ProjetoID          int64      `gorm:"column:projeto_id;not null"`
 	Titulo             string     `gorm:"column:titulo;not null"`
 	Descricao          *string    `gorm:"column:descricao"`
+	ComentarioEntrega  *string    `gorm:"column:comentario_entrega"`
+	ComentarioReview   *string    `gorm:"column:comentario_review"`
 	Status             string     `gorm:"column:status;not null"`
 	UsuarioAtribuidoID *int64     `gorm:"column:usuario_atribuido_id"`
 	Pausada            bool       `gorm:"column:pausada;not null"`

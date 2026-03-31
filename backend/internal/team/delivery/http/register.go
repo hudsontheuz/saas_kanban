@@ -15,6 +15,10 @@ func Register(r chi.Router, handler *TeamHandler, validadorJWT *authjwt.Validado
 	auth := r.With(authmiddleware.AutenticacaoJWT(validadorJWT))
 	auth.Post("/teams", handler.Create)
 
+	if handler.listMyTeams != nil {
+		auth.Get("/me/teams", handler.GetMyTeams)
+	}
+
 	if handler.getByID != nil {
 		auth.Get("/teams/{id}", handler.GetByID)
 	}

@@ -19,6 +19,7 @@ interface CreateProjectInput {
 
 interface CreateTaskInput {
   title: string;
+  description: string;
 }
 
 function asObject(value: unknown): Record<string, unknown> {
@@ -72,7 +73,7 @@ function normalizeMember(input: unknown): TeamMember {
   const data = asObject(input);
   const roleValue = pickString(data, ['role', 'papel', 'Role'], 'MEMBER').toUpperCase();
   return {
-    id: pickString(data, ['id', 'memberId', 'member_id', 'userId', 'user_id', 'ID'], crypto.randomUUID()),
+    id: pickString(data, ['id', 'userId', 'user_id', 'memberId', 'member_id', 'ID'], crypto.randomUUID()),
     name: pickString(data, ['name', 'nome', 'Name'], 'Membro'),
     email: pickString(data, ['email', 'Email']),
     role: roleValue === 'LEADER' ? 'LEADER' : 'MEMBER',
@@ -118,6 +119,8 @@ function normalizeTask(input: unknown): Task {
     id: pickString(data, ['id', 'taskId', 'task_id', 'TaskID', 'ID'], crypto.randomUUID()),
     title: pickString(data, ['title', 'titulo', 'Title'], 'Tarefa'),
     description: pickString(data, ['description', 'descricao', 'Description']),
+    deliveryComment: pickString(data, ['deliveryComment', 'comentario_entrega', 'comentarioEntrega']) || undefined,
+    reviewComment: pickString(data, ['reviewComment', 'comentario_review', 'comentarioReview']) || undefined,
     status: normalizeTaskStatus(pickValue(data, 'status', 'estado', 'Status')),
     assigneeId: pickString(data, ['assigneeId', 'assignee_id', 'responsavelId', 'executorId']) || undefined,
     selectedUserId: pickString(data, ['selectedUserId', 'selected_user_id', 'sugeridoParaId']) || undefined,
@@ -132,60 +135,66 @@ function normalizeTasks(input: unknown): Task[] {
   return Array.isArray(items) ? items.map(normalizeTask) : [];
 }
 
-function buildFallbackTeam(currentUser: AuthUser | null): Team | null {
-  const storedTeam = workspaceStorage.getTeamSnapshot();
-  if (storedTeam) return storedTeam;
-  if (!currentUser) return null;
+function normalizeTeam(input: unknown, currentUser: AuthUser | null): Team {
+  const data = asObject(input);
+  const membersRaw = pickValue(data, 'members', 'membros', 'items');
+  const members = Array.isArray(membersRaw) ? membersRaw.map(normalizeMember) : [];
+  const fallbackMember = currentUser
+    ? [{ id: currentUser.id, name: currentUser.name, email: currentUser.email, role: 'LEADER' as const }]
+    : [];
 
   return {
-    id: '',
-    name: 'Minha equipe',
-    members: [
-      {
-        id: currentUser.id,
-        name: currentUser.name,
-        email: currentUser.email,
-        role: 'LEADER',
-      },
-    ],
+    id: pickString(data, ['id', 'teamId', 'team_id', 'TeamID', 'ID']),
+    name: pickString(data, ['name', 'nome', 'Name'], 'Minha equipe'),
+    members: members.length > 0 ? members : fallbackMember,
   };
 }
 
-function optimisticProject(id: string, input: CreateProjectInput): Project {
-  return {
-    id,
-    name: input.name,
-    description: '',
-    active: true,
-    createdAt: new Date().toISOString(),
-    settings: input.settings,
-  };
-}
+async function resolveTeamId(currentUser: AuthUser | null): Promise<string | null> {
+  const storedTeamId = workspaceStorage.getTeamId();
+  if (storedTeamId) return storedTeamId;
 
-function optimisticTask(id: string, input: CreateTaskInput): Task {
-  return {
-    id,
-    title: input.title,
-    description: '',
-    status: 'TODO',
-    paused: false,
-  };
+  try {
+    const { data } = await apiClient.get('/me/teams');
+    const items = Array.isArray((data as { items?: unknown[] })?.items) ? (data as { items: unknown[] }).items : [];
+    const firstTeam = items[0];
+    if (!firstTeam) return null;
+    const teamId = extractId(firstTeam, 'teamId', 'team_id', 'TeamID', 'id', 'ID');
+    workspaceStorage.setTeamId(teamId);
+    if (currentUser) {
+      workspaceStorage.setTeamSnapshot({
+        id: teamId,
+        name: pickString(asObject(firstTeam), ['name', 'nome', 'Name'], 'Minha equipe'),
+        members: [{ id: currentUser.id, name: currentUser.name, email: currentUser.email, role: 'LEADER' }],
+      });
+    }
+    return teamId;
+  } catch {
+    return null;
+  }
 }
 
 export const workspaceApi = {
   async bootstrap(currentUser: AuthUser | null): Promise<WorkspaceSnapshot> {
-    const teamId = workspaceStorage.getTeamId();
+    const teamId = await resolveTeamId(currentUser);
     if (!teamId) {
       return { team: null, project: null, tasks: [], members: [] };
     }
 
-    const team = buildFallbackTeam(currentUser) ?? {
-      id: teamId,
-      name: 'Minha equipe',
-      members: [],
-    };
+    let team: Team | null = null;
+    let members: TeamMember[] = [];
 
-    team.id = teamId;
+    try {
+      const teamResponse = await apiClient.get(`/teams/${teamId}`);
+      team = normalizeTeam(teamResponse.data, currentUser);
+      members = team.members;
+      workspaceStorage.setTeamSnapshot(team);
+      workspaceStorage.setTeamId(team.id);
+    } catch {
+      const snapshot = workspaceStorage.getTeamSnapshot();
+      team = snapshot ? { id: snapshot.id, name: snapshot.name, members: snapshot.members } : null;
+      members = team?.members ?? [];
+    }
 
     let project: Project | null = null;
     let tasks: Task[] = [];
@@ -208,7 +217,6 @@ export const workspaceApi = {
       }
     }
 
-    const members = team.members ?? [];
     return { team, project, tasks, members };
   },
 
@@ -241,14 +249,15 @@ export const workspaceApi = {
   },
 
   async createProject(teamId: string, input: CreateProjectInput): Promise<Project> {
-    const { data } = await apiClient.post(`/teams/${teamId}/projects`, {
+    await apiClient.post(`/teams/${teamId}/projects`, {
       nome: input.name,
       permitir_soltar_doing_para_todo: input.settings.allowDropTask,
     });
 
-    const projectId = extractId(data, 'projectId', 'project_id', 'ProjectID', 'id', 'ID');
-    workspaceStorage.setProjectId(projectId);
-    return optimisticProject(projectId, input);
+    const activeProjectResponse = await apiClient.get(`/teams/${teamId}/projects/active`);
+    const project = normalizeProject(activeProjectResponse.data);
+    workspaceStorage.setProjectId(project.id);
+    return project;
   },
 
   async closeProject(projectId: string): Promise<void> {
@@ -265,10 +274,17 @@ export const workspaceApi = {
   async createTask(projectId: string, input: CreateTaskInput): Promise<Task> {
     const { data } = await apiClient.post(`/projects/${projectId}/tasks`, {
       titulo: input.title,
+      descricao: input.description,
     });
 
     const taskId = extractId(data, 'taskId', 'task_id', 'TaskID', 'id', 'ID');
-    return optimisticTask(taskId, input);
+    return {
+      id: taskId,
+      title: input.title,
+      description: input.description,
+      status: 'TODO',
+      paused: false,
+    };
   },
 
   async selfAssignTask(taskId: string): Promise<void> {
@@ -283,15 +299,15 @@ export const workspaceApi = {
     await apiClient.post(`/tasks/${taskId}/resume`);
   },
 
-  async moveTaskToReview(taskId: string): Promise<void> {
-    await apiClient.post(`/tasks/${taskId}/in-review`);
+  async moveTaskToReview(taskId: string, deliveryComment: string): Promise<void> {
+    await apiClient.post(`/tasks/${taskId}/in-review`, { comentario_entrega: deliveryComment });
   },
 
   async approveTask(taskId: string): Promise<void> {
     await apiClient.post(`/tasks/${taskId}/approve`);
   },
 
-  async rejectTask(taskId: string): Promise<void> {
-    await apiClient.post(`/tasks/${taskId}/reject`);
+  async rejectTask(taskId: string, reason: string): Promise<void> {
+    await apiClient.post(`/tasks/${taskId}/reject`, { motivo: reason });
   },
 };

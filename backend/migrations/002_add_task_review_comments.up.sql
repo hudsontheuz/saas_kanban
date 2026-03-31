@@ -1,0 +1,9 @@
+BEGIN;
+
+ALTER TABLE tarefa
+  ADD COLUMN IF NOT EXISTS comentario_review TEXT NULL;
+
+ALTER TABLE tarefa
+  ADD COLUMN IF NOT EXISTS comentario_entrega TEXT;
+
+COMMIT;

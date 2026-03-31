@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"testing"
@@ -44,21 +45,38 @@ func openTestDB(t *testing.T) *gorm.DB {
 
 	applySchema(t, db)
 	resetTables(t, db)
+
 	return db
 }
 
 func applySchema(t *testing.T, db *gorm.DB) {
 	t.Helper()
 
-	sqlPath := filepath.Join("..", "migrations", "001_start_system.up.sql")
-	content, err := os.ReadFile(sqlPath)
+	pattern := filepath.Join("..", "migrations", "*_*.up.sql")
+	files, err := filepath.Glob(pattern)
 	if err != nil {
-		t.Fatalf("erro lendo migration: %v", err)
+		t.Fatalf("erro listando migrations: %v", err)
+	}
+	if len(files) == 0 {
+		t.Fatalf("nenhuma migration encontrada em %s", pattern)
 	}
 
-	for _, stmt := range splitSQLStatements(string(content)) {
-		if err := db.Exec(stmt).Error; err != nil {
-			t.Fatalf("erro aplicando migration em %q: %v", stmt, err)
+	sort.Strings(files)
+
+	for _, sqlPath := range files {
+		content, err := os.ReadFile(sqlPath)
+		if err != nil {
+			t.Fatalf("erro lendo migration %s: %v", sqlPath, err)
+		}
+
+		for _, stmt := range splitSQLStatements(string(content)) {
+			if err := db.Exec(stmt).Error; err != nil {
+				if strings.Contains(strings.ToLower(err.Error()), "already exists") ||
+					strings.Contains(strings.ToLower(err.Error()), "already") {
+					continue
+				}
+				t.Fatalf("erro aplicando migration %s em %q: %v", sqlPath, stmt, err)
+			}
 		}
 	}
 }
@@ -161,7 +179,7 @@ func seedTask(t *testing.T, db *gorm.DB, projectID project.ProjectID, titulo str
 
 	repo := taskrepo.NewTaskRepo(db)
 
-	tk, err := task.NovaTask(projectID, titulo)
+	tk, err := task.NovaTask(projectID, titulo, "descrição padrão")
 	if err != nil {
 		t.Fatalf("erro criando task de teste: %v", err)
 	}

@@ -41,6 +41,21 @@ func (r *TaskRepo) Salvar(tk *task.Task) error {
 		assigneeID = &uid
 	}
 
+	var descricao *string
+	if d := strings.TrimSpace(tk.Descricao()); d != "" {
+		descricao = &d
+	}
+
+	var comentarioEntrega *string
+	if c := strings.TrimSpace(tk.ComentarioEntrega()); c != "" {
+		comentarioEntrega = &c
+	}
+
+	var comentarioReview *string
+	if c := strings.TrimSpace(tk.ComentarioReview()); c != "" {
+		comentarioReview = &c
+	}
+
 	var outcome *string
 	if o := tk.Outcome(); o != nil {
 		s := string(*o)
@@ -53,6 +68,9 @@ func (r *TaskRepo) Salvar(tk *task.Task) error {
 		m := model.Tarefa{
 			ProjetoID:          projID,
 			Titulo:             tk.Titulo(),
+			Descricao:          descricao,
+			ComentarioEntrega:  comentarioEntrega,
+			ComentarioReview:   comentarioReview,
 			Status:             string(tk.Status()),
 			UsuarioAtribuidoID: assigneeID,
 			Pausada:            tk.IsPaused(),
@@ -73,6 +91,9 @@ func (r *TaskRepo) Salvar(tk *task.Task) error {
 	updates := map[string]any{
 		"projeto_id":           projID,
 		"titulo":               tk.Titulo(),
+		"descricao":            descricao,
+		"comentario_entrega":   comentarioEntrega,
+		"comentario_review":    comentarioReview,
 		"status":               string(tk.Status()),
 		"usuario_atribuido_id": assigneeID,
 		"pausada":              tk.IsPaused(),
@@ -110,10 +131,28 @@ func (r *TaskRepo) BuscarPorID(id task.TaskID) (*task.Task, error) {
 		domOutcome = &o
 	}
 
+	descricao := ""
+	if m.Descricao != nil {
+		descricao = *m.Descricao
+	}
+
+	comentarioEntrega := ""
+	if m.ComentarioEntrega != nil {
+		comentarioEntrega = *m.ComentarioEntrega
+	}
+
+	comentarioReview := ""
+	if m.ComentarioReview != nil {
+		comentarioReview = *m.ComentarioReview
+	}
+
 	return task.HidratarTask(
 		task.TaskID(strconv.FormatInt(m.ID, 10)),
 		project.ProjectID(strconv.FormatInt(m.ProjetoID, 10)),
 		m.Titulo,
+		descricao,
+		comentarioEntrega,
+		comentarioReview,
 		task.StatusTask(m.Status),
 		domAssignee,
 		m.Pausada,
@@ -153,10 +192,28 @@ func (r *TaskRepo) ListarPorProjectID(projectID project.ProjectID, status *task.
 			domOutcome = &o
 		}
 
+		descricao := ""
+		if m.Descricao != nil {
+			descricao = *m.Descricao
+		}
+
+		comentarioEntrega := ""
+		if m.ComentarioEntrega != nil {
+			comentarioEntrega = *m.ComentarioEntrega
+		}
+
+		comentarioReview := ""
+		if m.ComentarioReview != nil {
+			comentarioReview = *m.ComentarioReview
+		}
+
 		items = append(items, task.HidratarTask(
 			task.TaskID(strconv.FormatInt(m.ID, 10)),
 			project.ProjectID(strconv.FormatInt(m.ProjetoID, 10)),
 			m.Titulo,
+			descricao,
+			comentarioEntrega,
+			comentarioReview,
 			task.StatusTask(m.Status),
 			domAssignee,
 			m.Pausada,
@@ -179,5 +236,6 @@ func (r *TaskRepo) ExisteDoingAtivaParaUser(userID user.UserID) (bool, error) {
 	err = r.db.Model(&model.Tarefa{}).
 		Where("usuario_atribuido_id = ? AND status = 'DOING' AND pausada = false AND deleted_at IS NULL", uid).
 		Count(&count).Error
+
 	return count > 0, err
 }

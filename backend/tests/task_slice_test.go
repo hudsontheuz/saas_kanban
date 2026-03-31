@@ -34,6 +34,7 @@ func TestSlice_CriarTask_OK(t *testing.T) {
 	resp, err := uc.Executar(dto.CriarTaskRequest{
 		ProjectID: string(p.ID()),
 		Titulo:    "Primeira task",
+		Descricao: "Descrição da primeira task",
 		CriadorID: string(leaderID),
 	})
 	if err != nil {
@@ -57,7 +58,9 @@ func TestSlice_ProjectFechado_BloqueiaCriarTask(t *testing.T) {
 	if err != nil {
 		t.Fatalf("erro ao criar project: %v", err)
 	}
-	p.Fechar(time.Now().UTC())
+	if err := p.Fechar(time.Now().UTC()); err != nil {
+		t.Fatalf("erro ao fechar project: %v", err)
+	}
 
 	if err := projectRepo.Salvar(p); err != nil {
 		t.Fatalf("erro ao salvar project: %v", err)
@@ -67,6 +70,8 @@ func TestSlice_ProjectFechado_BloqueiaCriarTask(t *testing.T) {
 	_, err = uc.Executar(dto.CriarTaskRequest{
 		ProjectID: string(p.ID()),
 		Titulo:    "Task bloqueada",
+		Descricao: "Descrição da task bloqueada",
+		CriadorID: string(leaderID),
 	})
 	if err == nil {
 		t.Fatalf("esperava erro por projeto fechado")
