@@ -26,7 +26,7 @@ func (uc *CriarTaskUseCase) Executar(req dto.CriarTaskRequest) (dto.CriarTaskRes
 		return dto.CriarTaskResponse{}, project.ErrProjetoFechado
 	}
 
-	tk, err := task.NovaTask(p.ID(), req.Titulo)
+	tk, err := task.NovaTask(p.ID(), req.Titulo, req.Descricao)
 	if err != nil {
 		return dto.CriarTaskResponse{}, err
 	}

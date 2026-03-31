@@ -4,12 +4,14 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
-export function CreateTaskDialog({ onCreate, disabled }: { onCreate: (title: string) => Promise<void>; disabled?: boolean }) {
+export function CreateTaskDialog({ onCreate, disabled }: { onCreate: (title: string, description: string) => Promise<void>; disabled?: boolean }) {
   const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
 
   const handleCreate = async () => {
-    await onCreate(title);
+    await onCreate(title, description);
     setTitle('');
+    setDescription('');
   };
 
   return (
@@ -27,7 +29,17 @@ export function CreateTaskDialog({ onCreate, disabled }: { onCreate: (title: str
             <Label htmlFor="task-title">Título</Label>
             <Input id="task-title" value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Ex.: Ajustar fluxo de aprovação" />
           </div>
-          <Button className="w-full" onClick={handleCreate} disabled={!title.trim()}>Salvar</Button>
+          <div className="space-y-2">
+            <Label htmlFor="task-description">O que fazer</Label>
+            <textarea
+              id="task-description"
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+              placeholder="Descreva com clareza o que precisa ser feito."
+              className="min-h-28 w-full rounded-md border border-slate-200 px-3 py-2 text-sm outline-none transition focus:border-slate-400"
+            />
+          </div>
+          <Button className="w-full" onClick={handleCreate} disabled={!title.trim() || !description.trim()}>Salvar</Button>
         </div>
       </DialogContent>
     </Dialog>

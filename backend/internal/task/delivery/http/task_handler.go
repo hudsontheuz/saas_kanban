@@ -75,7 +75,16 @@ func NewTaskHandlerWorkflowWithList(
 }
 
 type criarTaskBody struct {
-	Titulo string `json:"titulo"`
+	Titulo    string `json:"titulo"`
+	Descricao string `json:"descricao"`
+}
+
+type reprovarTaskBody struct {
+	Motivo string `json:"motivo"`
+}
+
+type moverParaInReviewBody struct {
+	ComentarioEntrega string `json:"comentario_entrega"`
 }
 
 func (h *TaskHandler) Create(w http.ResponseWriter, r *http.Request) {
@@ -96,6 +105,7 @@ func (h *TaskHandler) Create(w http.ResponseWriter, r *http.Request) {
 	resp, err := h.create.Executar(taskdto.CriarTaskRequest{
 		ProjectID: projectID,
 		Titulo:    body.Titulo,
+		Descricao: body.Descricao,
 		CriadorID: string(idUsuario),
 	})
 	if err != nil {
@@ -130,6 +140,27 @@ func (h *TaskHandler) ListByProject(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, resp)
+}
+
+func (h *TaskHandler) Approve(w http.ResponseWriter, r *http.Request) {
+	taskID := chi.URLParam(r, "id")
+
+	idUsuario, ok := authctx.IDUsuarioDoContexto(r.Context())
+	if !ok || idUsuario == "" {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
+		return
+	}
+
+	err := h.approve.Executar(taskdto.AprovarTaskRequest{
+		TaskID:   taskID,
+		LeaderID: string(idUsuario),
+	})
+	if err != nil {
+		writeTaskError(w, err)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]any{"ok": true})
 }
 
 func (h *TaskHandler) SelfAssign(w http.ResponseWriter, r *http.Request) {
@@ -204,30 +235,16 @@ func (h *TaskHandler) InReview(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var body moverParaInReviewBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "json inválido"})
+		return
+	}
+
 	err := h.inReview.Executar(taskdto.MoverParaInReviewRequest{
-		TaskID: taskID,
-		UserID: string(idUsuario),
-	})
-	if err != nil {
-		writeTaskError(w, err)
-		return
-	}
-
-	writeJSON(w, http.StatusOK, map[string]any{"ok": true})
-}
-
-func (h *TaskHandler) Approve(w http.ResponseWriter, r *http.Request) {
-	taskID := chi.URLParam(r, "id")
-
-	idUsuario, ok := authctx.IDUsuarioDoContexto(r.Context())
-	if !ok || idUsuario == "" {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
-		return
-	}
-
-	err := h.approve.Executar(taskdto.AprovarTaskRequest{
-		TaskID:   taskID,
-		LeaderID: string(idUsuario),
+		TaskID:            taskID,
+		UserID:            string(idUsuario),
+		ComentarioEntrega: body.ComentarioEntrega,
 	})
 	if err != nil {
 		writeTaskError(w, err)
@@ -246,9 +263,16 @@ func (h *TaskHandler) Reject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var body reprovarTaskBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "json inválido"})
+		return
+	}
+
 	err := h.reject.Executar(taskdto.ReprovarTaskRequest{
 		TaskID:   taskID,
 		LeaderID: string(idUsuario),
+		Motivo:   body.Motivo,
 	})
 	if err != nil {
 		writeTaskError(w, err)

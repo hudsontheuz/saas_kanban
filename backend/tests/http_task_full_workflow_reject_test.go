@@ -79,7 +79,7 @@ func TestHTTP_TaskFullWorkflow_Reject(t *testing.T) {
 	userToken := gerarJWT(t, segredo, emissor, string(userID), time.Now().Add(1*time.Hour))
 	leaderToken := gerarJWT(t, segredo, emissor, string(leaderID), time.Now().Add(1*time.Hour))
 
-	createBody, _ := json.Marshal(map[string]string{"titulo": "Task completa reject"})
+	createBody, _ := json.Marshal(map[string]string{"titulo": "Task completa reject", "descricao": "Implementar fluxo completo de reprovação"})
 
 	req, _ := http.NewRequest(http.MethodPost, server.URL+"/projects/"+string(projectID)+"/tasks", bytes.NewReader(createBody))
 	req.Header.Set("Authorization", "Bearer "+userToken)
@@ -108,8 +108,10 @@ func TestHTTP_TaskFullWorkflow_Reject(t *testing.T) {
 	}
 	defer resp.Body.Close()
 
-	req, _ = http.NewRequest(http.MethodPost, server.URL+"/tasks/"+createResp.TaskID+"/in-review", nil)
+	inReviewBody, _ := json.Marshal(map[string]string{"comentario_entrega": "Implementei o fluxo inicial, mas ainda falta revisar um caso de borda."})
+	req, _ = http.NewRequest(http.MethodPost, server.URL+"/tasks/"+createResp.TaskID+"/in-review", bytes.NewReader(inReviewBody))
 	req.Header.Set("Authorization", "Bearer "+userToken)
+	req.Header.Set("Content-Type", "application/json")
 	resp, err = http.DefaultClient.Do(req)
 	if err != nil {
 		t.Fatalf("erro no in-review: %v", err)
@@ -120,8 +122,10 @@ func TestHTTP_TaskFullWorkflow_Reject(t *testing.T) {
 		t.Fatalf("esperava 200 no in-review, veio %d", resp.StatusCode)
 	}
 
-	req, _ = http.NewRequest(http.MethodPost, server.URL+"/tasks/"+createResp.TaskID+"/reject", nil)
+	rejectBody, _ := json.Marshal(map[string]string{"motivo": "Faltou validar o fluxo quando volta para To Do"})
+	req, _ = http.NewRequest(http.MethodPost, server.URL+"/tasks/"+createResp.TaskID+"/reject", bytes.NewReader(rejectBody))
 	req.Header.Set("Authorization", "Bearer "+leaderToken)
+	req.Header.Set("Content-Type", "application/json")
 	resp, err = http.DefaultClient.Do(req)
 	if err != nil {
 		t.Fatalf("erro no reject: %v", err)
@@ -139,5 +143,11 @@ func TestHTTP_TaskFullWorkflow_Reject(t *testing.T) {
 
 	if tk.Status() != task.ToDo {
 		t.Fatalf("esperava task voltando para TODO, veio %s", tk.Status())
+	}
+	if tk.ComentarioReview() == "" {
+		t.Fatalf("esperava comentário de review salvo")
+	}
+	if tk.ComentarioEntrega() == "" {
+		t.Fatalf("esperava comentário de entrega salvo")
 	}
 }

@@ -106,3 +106,70 @@ func (r *TeamRepo) BuscarPorID(id team.TeamID) (*team.Team, error) {
 		user.UserID(strconv.FormatInt(m.LiderUsuarioID, 10)),
 	), nil
 }
+
+func (r *TeamRepo) ListarPorUsuarioID(userID user.UserID) ([]*team.Team, error) {
+	uid, err := parseTeamID(string(userID))
+	if err != nil {
+		return nil, err
+	}
+
+	var models []model.Equipe
+	err = r.db.
+		Table("equipe").
+		Joins("JOIN equipe_membro ON equipe_membro.equipe_id = equipe.id").
+		Where("equipe_membro.usuario_id = ?", uid).
+		Order("equipe.id ASC").
+		Find(&models).Error
+	if err != nil {
+		return nil, err
+	}
+
+	items := make([]*team.Team, 0, len(models))
+	for _, m := range models {
+		items = append(items, team.HidratarTeam(
+			team.TeamID(strconv.FormatInt(m.ID, 10)),
+			m.Nome,
+			user.UserID(strconv.FormatInt(m.LiderUsuarioID, 10)),
+		))
+	}
+
+	return items, nil
+}
+
+type membroRow struct {
+	UsuarioID int64  `gorm:"column:usuario_id"`
+	Nome      string `gorm:"column:nome"`
+	Email     string `gorm:"column:email"`
+	Role      string `gorm:"column:role"`
+}
+
+func (r *TeamRepo) ListarMembros(id team.TeamID) ([]team.Membro, error) {
+	tid, err := parseTeamID(string(id))
+	if err != nil {
+		return nil, err
+	}
+
+	var rows []membroRow
+	err = r.db.
+		Table("equipe_membro").
+		Select("equipe_membro.usuario_id, usuario.nome, usuario.email, equipe_membro.role").
+		Joins("JOIN usuario ON usuario.id = equipe_membro.usuario_id").
+		Where("equipe_membro.equipe_id = ?", tid).
+		Order("equipe_membro.id ASC").
+		Scan(&rows).Error
+	if err != nil {
+		return nil, err
+	}
+
+	membros := make([]team.Membro, 0, len(rows))
+	for _, row := range rows {
+		membros = append(membros, team.Membro{
+			UserID: user.UserID(strconv.FormatInt(row.UsuarioID, 10)),
+			Nome:   row.Nome,
+			Email:  row.Email,
+			Role:   row.Role,
+		})
+	}
+
+	return membros, nil
+}

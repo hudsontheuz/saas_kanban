@@ -53,7 +53,7 @@ func TestHTTP_Team_Create(t *testing.T) {
 	handlerTask := taskhttp.NewTaskHandler(taskusecase.NovoSelfAssignTaskUseCase(repoProjeto, repoTarefa))
 
 	ucCriarTeam := teamusecase.NovoCriarTeamUseCase(repoTeam)
-	handlerTeam := teamhttp.NewTeamHandler(ucCriarTeam)
+	handlerTeam := teamhttp.NewTeamHandler(ucCriarTeam, nil, nil)
 
 	router := deliveryhttp.NewRouter(handlerAuth, handlerTeam, nil, handlerTask, validador)
 	server := httptest.NewServer(router)

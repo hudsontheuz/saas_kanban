@@ -36,7 +36,7 @@ export function TasksPage() {
 
   const filtered = useMemo(() => {
     const lower = query.toLowerCase();
-    return tasks.filter((task) => task.title.toLowerCase().includes(lower));
+    return tasks.filter((task) => task.title.toLowerCase().includes(lower) || task.description.toLowerCase().includes(lower));
   }, [query, tasks]);
 
   const isLeader = members.some((member) => member.id === user?.id && member.role === 'LEADER');
@@ -89,9 +89,9 @@ export function TasksPage() {
                       onSelfAssign={(taskId) => void selfAssignTask(taskId)}
                       onPause={(taskId) => void pauseTask(taskId)}
                       onResume={(taskId) => void resumeTask(taskId)}
-                      onMoveToReview={(taskId) => void moveTaskToReview(taskId)}
+                      onMoveToReview={(taskId, comment) => void moveTaskToReview(taskId, comment)}
                       onApprove={(taskId) => void approveTask(taskId)}
-                      onReject={(taskId) => void rejectTask(taskId)}
+                      onReject={(taskId, reason) => void rejectTask(taskId, reason)}
                     />
                   ))}
                   {columnTasks.length === 0 && (

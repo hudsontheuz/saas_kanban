@@ -53,7 +53,7 @@ func TestHTTP_Project_Workflow(t *testing.T) {
 	handlerAuth := authhttp.NewAuthHandler(ucRegister, ucLogin)
 
 	ucCriarTeam := teamusecase.NovoCriarTeamUseCase(repoTeam)
-	handlerTeam := teamhttp.NewTeamHandler(ucCriarTeam)
+	handlerTeam := teamhttp.NewTeamHandler(ucCriarTeam, nil, nil)
 
 	ucCriarProject := projectusecase.NovoCriarProjectUseCase(repoTeam, repoProjeto)
 	ucBuscarProjectAtivo := projectusecase.NovoBuscarProjectAtivoUseCase(repoProjeto)

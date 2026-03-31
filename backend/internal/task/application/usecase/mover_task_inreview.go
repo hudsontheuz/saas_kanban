@@ -2,11 +2,11 @@ package usecase
 
 import (
 	projectports "github.com/hudsontheuz/saas_kanban/internal/project/application/ports"
-	"github.com/hudsontheuz/saas_kanban/internal/project/domain"
-	"github.com/hudsontheuz/saas_kanban/internal/task/application/dto"
+	project "github.com/hudsontheuz/saas_kanban/internal/project/domain"
+	taskdto "github.com/hudsontheuz/saas_kanban/internal/task/application/dto"
 	taskports "github.com/hudsontheuz/saas_kanban/internal/task/application/ports"
-	"github.com/hudsontheuz/saas_kanban/internal/task/domain"
-	"github.com/hudsontheuz/saas_kanban/internal/user/domain"
+	task "github.com/hudsontheuz/saas_kanban/internal/task/domain"
+	user "github.com/hudsontheuz/saas_kanban/internal/user/domain"
 )
 
 type MoverParaInReviewUseCase struct {
@@ -14,11 +14,17 @@ type MoverParaInReviewUseCase struct {
 	tasks    taskports.TaskRepository
 }
 
-func NovoMoverParaInReviewUseCase(projects projectports.ProjectRepository, tasks taskports.TaskRepository) *MoverParaInReviewUseCase {
-	return &MoverParaInReviewUseCase{projects: projects, tasks: tasks}
+func NovoMoverParaInReviewUseCase(
+	projects projectports.ProjectRepository,
+	tasks taskports.TaskRepository,
+) *MoverParaInReviewUseCase {
+	return &MoverParaInReviewUseCase{
+		projects: projects,
+		tasks:    tasks,
+	}
 }
 
-func (uc *MoverParaInReviewUseCase) Executar(req dto.MoverParaInReviewRequest) error {
+func (uc *MoverParaInReviewUseCase) Executar(req taskdto.MoverParaInReviewRequest) error {
 	tk, err := uc.tasks.BuscarPorID(task.TaskID(req.TaskID))
 	if err != nil {
 		return err
@@ -28,6 +34,7 @@ func (uc *MoverParaInReviewUseCase) Executar(req dto.MoverParaInReviewRequest) e
 	if err != nil {
 		return err
 	}
+
 	if p.EstaFechado() {
 		return project.ErrProjetoFechado
 	}
@@ -38,9 +45,10 @@ func (uc *MoverParaInReviewUseCase) Executar(req dto.MoverParaInReviewRequest) e
 		return err
 	}
 
-	if err := tk.MoverParaInReview(); err != nil {
+	if err := tk.MoverParaInReview(req.ComentarioEntrega); err != nil {
 		return err
 	}
+
 	if err := tk.ValidarInvariantes(); err != nil {
 		return err
 	}

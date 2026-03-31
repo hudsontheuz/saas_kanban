@@ -79,7 +79,7 @@ func TestHTTP_TaskFullWorkflow_Approve(t *testing.T) {
 	userToken := gerarJWT(t, segredo, emissor, string(userID), time.Now().Add(1*time.Hour))
 	leaderToken := gerarJWT(t, segredo, emissor, string(leaderID), time.Now().Add(1*time.Hour))
 
-	createBody, _ := json.Marshal(map[string]string{"titulo": "Task completa approve"})
+	createBody, _ := json.Marshal(map[string]string{"titulo": "Task completa approve", "descricao": "Implementar fluxo completo de aprovação"})
 
 	req, _ := http.NewRequest(http.MethodPost, server.URL+"/projects/"+string(projectID)+"/tasks", bytes.NewReader(createBody))
 	req.Header.Set("Authorization", "Bearer "+userToken)
@@ -124,8 +124,10 @@ func TestHTTP_TaskFullWorkflow_Approve(t *testing.T) {
 	}
 	defer resp.Body.Close()
 
-	req, _ = http.NewRequest(http.MethodPost, server.URL+"/tasks/"+createResp.TaskID+"/in-review", nil)
+	inReviewBody, _ := json.Marshal(map[string]string{"comentario_entrega": "Implementei o fluxo, validei os estados e revisei os retornos da API."})
+	req, _ = http.NewRequest(http.MethodPost, server.URL+"/tasks/"+createResp.TaskID+"/in-review", bytes.NewReader(inReviewBody))
 	req.Header.Set("Authorization", "Bearer "+userToken)
+	req.Header.Set("Content-Type", "application/json")
 	resp, err = http.DefaultClient.Do(req)
 	if err != nil {
 		t.Fatalf("erro no in-review: %v", err)
@@ -158,5 +160,8 @@ func TestHTTP_TaskFullWorkflow_Approve(t *testing.T) {
 	}
 	if tk.Outcome() == nil || *tk.Outcome() != task.OutcomeApproved {
 		t.Fatalf("esperava outcome APPROVED")
+	}
+	if tk.ComentarioEntrega() == "" {
+		t.Fatalf("esperava comentário de entrega salvo")
 	}
 }

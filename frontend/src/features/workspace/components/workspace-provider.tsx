@@ -22,13 +22,13 @@ interface WorkspaceContextValue {
   createProject: (name: string) => Promise<void>;
   closeProject: () => Promise<void>;
   updateProjectSettings: (settings: ProjectSettings) => Promise<void>;
-  createTask: (title: string) => Promise<void>;
+  createTask: (title: string, description: string) => Promise<void>;
   selfAssignTask: (taskId: string) => Promise<void>;
   pauseTask: (taskId: string) => Promise<void>;
   resumeTask: (taskId: string) => Promise<void>;
-  moveTaskToReview: (taskId: string) => Promise<void>;
+  moveTaskToReview: (taskId: string, deliveryComment: string) => Promise<void>;
   approveTask: (taskId: string) => Promise<void>;
-  rejectTask: (taskId: string) => Promise<void>;
+  rejectTask: (taskId: string, reason: string) => Promise<void>;
 }
 
 const defaultStats: Record<TaskStatus, number> = {
@@ -156,11 +156,11 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     }, 'Configurações atualizadas com sucesso.');
   }, [project, runAction]);
 
-  const createTask = useCallback(async (title: string) => {
+  const createTask = useCallback(async (title: string, description: string) => {
     if (!project) throw new Error('Crie um projeto antes de criar tarefas.');
 
     await runAction(async () => {
-      const task = await workspaceApi.createTask(project.id, { title });
+      const task = await workspaceApi.createTask(project.id, { title, description });
       setTasks((current) => [task, ...current]);
     }, 'Tarefa criada com sucesso.');
   }, [project, runAction]);
@@ -194,24 +194,24 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     }, 'Tarefa retomada com sucesso.');
   }, [runAction]);
 
-  const moveTaskToReview = useCallback(async (taskId: string) => {
+  const moveTaskToReview = useCallback(async (taskId: string, deliveryComment: string) => {
     await runAction(async () => {
-      await workspaceApi.moveTaskToReview(taskId);
-      setTasks((current) => current.map((task) => (task.id === taskId ? { ...task, status: 'IN_REVIEW', paused: false } : task)));
+      await workspaceApi.moveTaskToReview(taskId, deliveryComment);
+      setTasks((current) => current.map((task) => (task.id === taskId ? { ...task, status: 'IN_REVIEW', paused: false, deliveryComment } : task)));
     }, 'Tarefa enviada para revisão.');
   }, [runAction]);
 
   const approveTask = useCallback(async (taskId: string) => {
     await runAction(async () => {
       await workspaceApi.approveTask(taskId);
-      setTasks((current) => current.map((task) => (task.id === taskId ? { ...task, status: 'DONE', paused: false } : task)));
+      setTasks((current) => current.map((task) => (task.id === taskId ? { ...task, status: 'DONE', paused: false, reviewComment: undefined } : task)));
     }, 'Tarefa aprovada com sucesso.');
   }, [runAction]);
 
-  const rejectTask = useCallback(async (taskId: string) => {
+  const rejectTask = useCallback(async (taskId: string, reason: string) => {
     await runAction(async () => {
-      await workspaceApi.rejectTask(taskId);
-      setTasks((current) => current.map((task) => (task.id === taskId ? { ...task, status: 'TODO', paused: false } : task)));
+      await workspaceApi.rejectTask(taskId, reason);
+      setTasks((current) => current.map((task) => (task.id === taskId ? { ...task, status: 'TODO', paused: false, reviewComment: reason } : task)));
     }, 'Tarefa reprovada e devolvida para To Do.');
   }, [runAction]);
 

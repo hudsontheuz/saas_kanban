@@ -53,7 +53,7 @@ func TestHTTP_Team_GetByID(t *testing.T) {
 
 	ucCriarTeam := teamusecase.NovoCriarTeamUseCase(repoTeam)
 	ucBuscarTeam := teamusecase.NovoBuscarTeamUseCase(repoTeam)
-	handlerTeam := teamhttp.NewTeamHandler(ucCriarTeam, ucBuscarTeam)
+	handlerTeam := teamhttp.NewTeamHandler(ucCriarTeam, ucBuscarTeam, nil)
 
 	ucCriarProject := projectusecase.NovoCriarProjectUseCase(repoTeam, repoProjeto)
 	ucBuscarProjectAtivo := projectusecase.NovoBuscarProjectAtivoUseCase(repoProjeto)

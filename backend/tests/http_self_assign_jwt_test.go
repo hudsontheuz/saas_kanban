@@ -43,7 +43,7 @@ func TestHTTP_SelfAssign_ComJWT(t *testing.T) {
 		t.Fatalf("erro ao salvar project: %v", err)
 	}
 
-	tk, err := task.NovaTask(p.ID(), "Task Teste")
+	tk, err := task.NovaTask(p.ID(), "Task Teste", "Descrição da task de teste")
 	if err != nil {
 		t.Fatalf("erro ao criar task: %v", err)
 	}

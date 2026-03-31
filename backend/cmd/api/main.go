@@ -60,7 +60,8 @@ func main() {
 
 	ucCriarTeam := teamusecase.NovoCriarTeamUseCase(repoTeam)
 	ucBuscarTeam := teamusecase.NovoBuscarTeamUseCase(repoTeam)
-	handlerTeam := teamhttp.NewTeamHandler(ucCriarTeam, ucBuscarTeam)
+	ucListarMinhasTeams := teamusecase.NovoListarMinhasTeamsUseCase(repoTeam)
+	handlerTeam := teamhttp.NewTeamHandler(ucCriarTeam, ucBuscarTeam, ucListarMinhasTeams)
 
 	ucCriarProject := projectusecase.NovoCriarProjectUseCase(repoTeam, repoProjeto)
 	ucBuscarProjectAtivo := projectusecase.NovoBuscarProjectAtivoUseCase(repoProjeto)

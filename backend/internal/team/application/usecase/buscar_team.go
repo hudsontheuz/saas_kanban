@@ -20,9 +20,25 @@ func (uc *BuscarTeamUseCase) Executar(req teamdto.BuscarTeamRequest) (teamdto.Bu
 		return teamdto.BuscarTeamResponse{}, err
 	}
 
+	membros, err := uc.teams.ListarMembros(t.ID())
+	if err != nil {
+		return teamdto.BuscarTeamResponse{}, err
+	}
+
+	responseMembros := make([]teamdto.TeamMemberResponse, 0, len(membros))
+	for _, membro := range membros {
+		responseMembros = append(responseMembros, teamdto.TeamMemberResponse{
+			UserID: string(membro.UserID),
+			Nome:   membro.Nome,
+			Email:  membro.Email,
+			Role:   membro.Role,
+		})
+	}
+
 	return teamdto.BuscarTeamResponse{
 		TeamID:   string(t.ID()),
 		Nome:     t.Nome(),
 		LeaderID: string(t.LeaderID()),
+		Membros:  responseMembros,
 	}, nil
 }

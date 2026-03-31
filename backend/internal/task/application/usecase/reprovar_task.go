@@ -44,7 +44,7 @@ func (uc *ReprovarTaskUseCase) Executar(req dto.ReprovarTaskRequest) error {
 		return ErrSomenteLeaderPodeDecidir
 	}
 
-	if err := tk.ReprovarParaAjustes(); err != nil {
+	if err := tk.ReprovarParaAjustes(req.Motivo); err != nil {
 		return err
 	}
 	if err := tk.ValidarInvariantes(); err != nil {

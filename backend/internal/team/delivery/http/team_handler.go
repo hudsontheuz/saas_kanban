@@ -12,16 +12,17 @@ import (
 )
 
 type TeamHandler struct {
-	create  *teamusecase.CriarTeamUseCase
-	getByID *teamusecase.BuscarTeamUseCase
+	create      *teamusecase.CriarTeamUseCase
+	getByID     *teamusecase.BuscarTeamUseCase
+	listMyTeams *teamusecase.ListarMinhasTeamsUseCase
 }
 
-func NewTeamHandler(create *teamusecase.CriarTeamUseCase, getByID ...*teamusecase.BuscarTeamUseCase) *TeamHandler {
-	h := &TeamHandler{create: create}
-	if len(getByID) > 0 {
-		h.getByID = getByID[0]
-	}
-	return h
+func NewTeamHandler(
+	create *teamusecase.CriarTeamUseCase,
+	getByID *teamusecase.BuscarTeamUseCase,
+	listMyTeams *teamusecase.ListarMinhasTeamsUseCase,
+) *TeamHandler {
+	return &TeamHandler{create: create, getByID: getByID, listMyTeams: listMyTeams}
 }
 
 type criarTeamBody struct {
@@ -51,6 +52,27 @@ func (h *TeamHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusCreated, resp)
+}
+
+func (h *TeamHandler) GetMyTeams(w http.ResponseWriter, r *http.Request) {
+	if h.listMyTeams == nil {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "not found"})
+		return
+	}
+
+	idUsuario, ok := authctx.IDUsuarioDoContexto(r.Context())
+	if !ok || idUsuario == "" {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
+		return
+	}
+
+	resp, err := h.listMyTeams.Executar(teamdto.ListarMinhasTeamsRequest{UserID: string(idUsuario)})
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, resp)
 }
 
 func (h *TeamHandler) GetByID(w http.ResponseWriter, r *http.Request) {
