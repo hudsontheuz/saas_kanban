@@ -1,0 +1,12 @@
+.git
+.gitignore
+.env
+.env.*
+tests
+deployments
+tmp
+bin
+dist
+coverage
+Dockerfile
+README.md
