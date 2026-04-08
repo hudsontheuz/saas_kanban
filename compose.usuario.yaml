@@ -1,0 +1,62 @@
+name: saas_kanban
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: saas_kanban_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: saas
+      POSTGRES_PASSWORD: saas
+      POSTGRES_DB: saas_kanban
+    ports:
+      - "5434:5432"
+    volumes:
+      - saas_kanban_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U saas -d saas_kanban"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  migrate:
+    image: hudsontheuz/saas-kanban-migrate:latest
+    container_name: saas_kanban_migrate
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command:
+      [
+        "-database",
+        "postgres://saas:saas@postgres:5432/saas_kanban?sslmode=disable",
+        "up"
+      ]
+
+  backend:
+    image: hudsontheuz/saas-kanban-backend:latest
+    container_name: saas_kanban_backend
+    restart: unless-stopped
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      PORT: "8080"
+      JWT_SECRET: dev-secret
+      JWT_ISSUER: saas_kanban
+      DB_URL: postgres://saas:saas@postgres:5432/saas_kanban?sslmode=disable
+    ports:
+      - "8080:8080"
+
+  frontend:
+    image: hudsontheuz/saas-kanban-frontend:latest
+    container_name: saas_kanban_frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "5173:80"
+
+volumes:
+  saas_kanban_pgdata:
+    name: saas_kanban_pgdata
